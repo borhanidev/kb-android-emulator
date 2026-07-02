@@ -237,14 +237,11 @@ export function DeviceCard({ avd, onLaunch, onStop, onDelete, onEdit, logs }) {
   const [showLogs, setShowLogs] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
+  const [showConfirmWipe, setShowConfirmWipe] = useState(false)
 
   const handleLaunch = async () => { setLaunching(true); await onLaunch(avd.name, false); setLaunching(false) }
-  const handleWipeLaunch = async () => {
-    const ok = confirm(`⚠️ WARNING: Wipe & Boot will perform a Factory Reset on "${avd.name.replace(/_/g, ' ')}"! \n\nThis will permanently delete all installed apps, accounts, settings, and user data. \n\nAre you sure you want to completely wipe this device?`)
-    if (!ok) return
-    setLaunching(true)
-    await onLaunch(avd.name, true)
-    setLaunching(false)
+  const handleWipeLaunch = () => {
+    setShowConfirmWipe(true)
   }
   const handleStop = async () => { setStopping(true); await onStop(avd.name); setStopping(false) }
   
@@ -355,13 +352,40 @@ export function DeviceCard({ avd, onLaunch, onStop, onDelete, onEdit, logs }) {
               <strong style={{ color: '#ef4444' }}> This cannot be undone!</strong>
             </div>
             <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.03)', marginTop: 0 }}>
-              <button className="btn btn-ghost" onClick={() => setShowConfirmDelete(false)}>Cancel</button>
-              <button className="btn btn-danger" onClick={async () => {
-                setShowConfirmDelete(false)
-                await onDelete(avd.name)
-              }} style={{ background: '#ef4444', color: '#fff' }}>
-                🗑️ Delete Permanently
-              </button>
+               <button className="btn btn-ghost" onClick={() => setShowConfirmDelete(false)}>Cancel</button>
+               <button className="btn btn-danger" onClick={async () => {
+                 setShowConfirmDelete(false)
+                 await onDelete(avd.name)
+               }} style={{ background: '#ef4444', color: '#fff' }}>
+                 🗑️ Delete Permanently
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showConfirmWipe && (
+        <div className="modal-overlay" onClick={() => setShowConfirmWipe(false)}>
+          <div className="modal" style={{ width: 420 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-title" style={{ color: '#fbbf24' }}>
+              <span>⚠️</span> <span>Factory Reset AVD?</span>
+            </div>
+            <div style={{ padding: '16px 20px', fontSize: 13, lineHeight: '1.5', color: 'var(--text-secondary)' }}>
+              Are you sure you want to perform a **Factory Reset** on <strong>{avd.name.replace(/_/g, ' ')}</strong>?
+              <br /><br />
+              This will completely wipe all user accounts, installed apps, settings, and files. 
+              <strong style={{ color: '#fbbf24' }}> This cannot be undone!</strong>
+            </div>
+            <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.03)', marginTop: 0 }}>
+               <button className="btn btn-ghost" onClick={() => setShowConfirmWipe(false)}>Cancel</button>
+               <button className="btn btn-primary" onClick={async () => {
+                 setShowConfirmWipe(false)
+                 setLaunching(true)
+                 await onLaunch(avd.name, true)
+                 setLaunching(false)
+               }} style={{ background: '#fbbf24', color: '#09090b', border: 'none' }}>
+                 🧹 Wipe & Boot AVD
+               </button>
             </div>
           </div>
         </div>
