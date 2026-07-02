@@ -1386,6 +1386,16 @@ pub fn launch_avd(
                         let _ = std::process::Command::new(&adb_exe)
                             .args(["wait-for-device"])
                             .output();
+
+                        // Try to elevate to root (works on Google APIs / AOSP, fails on Google Play Store)
+                        let _ = std::process::Command::new(&adb_exe)
+                            .args(["root"])
+                            .output();
+
+                        // Wait for device to re-initialize after root command
+                        let _ = std::process::Command::new(&adb_exe)
+                            .args(["wait-for-device"])
+                            .output();
                         
                         // Disable HW Overlays in SurfaceFlinger (Force GPU composition)
                         let _ = std::process::Command::new(&adb_exe)
