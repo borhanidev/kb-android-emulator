@@ -128,8 +128,6 @@ export default function App() {
     const noBluetooth = localStorage.getItem('emulator_perf_no_bluetooth') === 'true'
 
     const readOnly = localStorage.getItem(`emulator_ultra_gaming_${name}`) === 'true'
-    const showQtSidebar = localStorage.getItem(`emulator_qt_sidebar_${name}`) === 'true'
-
     const result = await api.launchAvd({ 
       name, 
       gpuMode, 
@@ -141,7 +139,6 @@ export default function App() {
       noBluetooth,
       readOnly,
       wipeData,
-      showQtSidebar,
     })
     if (result.ok) {
       toast(`🚀 Launching "${name}"...`, 'info')

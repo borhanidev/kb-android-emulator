@@ -43,7 +43,6 @@ export const launchAvd = (opts) => invoke('launch_avd', {
   noBluetooth: opts.noBluetooth,
   readOnly: opts.readOnly,
   wipeData: opts.wipeData,
-  showQtSidebar: opts.showQtSidebar,
 })
 export const stopAvd   = (opts) => invoke('stop_avd', { name: opts.name })
 export const openFolder = (opts) => invoke('open_folder', { folderPath: opts.folderPath })

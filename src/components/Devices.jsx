@@ -64,7 +64,6 @@ export function CreateAvdDialog({ onClose, onCreated, gpus, status }) {
       systemImage: initialImage,
       ram: 4096, cores: 4, storage: 8192,
       gpuMode: defaultGpu, screenResolution: '1280x720', dpi: 240,
-      showQtSidebar: false,
     }
   })
   const [creating, setCreating] = useState(false)
@@ -132,7 +131,6 @@ export function CreateAvdDialog({ onClose, onCreated, gpus, status }) {
     })
     setCreating(false)
     if (result.ok) {
-      localStorage.setItem(`emulator_qt_sidebar_${form.name}`, String(form.showQtSidebar))
       onCreated()
     }
   }
@@ -219,16 +217,6 @@ export function CreateAvdDialog({ onClose, onCreated, gpus, status }) {
           </div>
           <div className="alert alert-info" style={{ fontSize: 12 }}>
             💡 <strong>x86_64 images</strong> run natively on your PC. GPU mode <strong>host</strong> passes your GPU directly to the emulator for maximum performance.
-          </div>
-
-          <div className="divider" style={{ margin: '8px 0' }} />
-
-          <div className="flex items-center justify-between" style={{ padding: '2px 0' }}>
-            <div style={{ flex: 1, paddingRight: 16 }}>
-              <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 2 }}>🖥️ Show Qt Extended Sidebar</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Show the Android Emulator extended controls panel (location, battery, etc). <span style={{ color: '#f87171' }}>May cause boot crash on some systems.</span></div>
-            </div>
-            <div className={`toggle ${form.showQtSidebar ? 'on' : ''}`} onClick={() => set('showQtSidebar', !form.showQtSidebar)} />
           </div>
 
           <div className="modal-footer">
@@ -417,9 +405,6 @@ export function EditAvdDialog({ avd, gpus, onClose, onSaved }) {
   const [ultraGaming, setUltraGaming] = useState(() => {
     return localStorage.getItem(`emulator_ultra_gaming_${avd.name}`) === 'true'
   })
-  const [showQtSidebar, setShowQtSidebar] = useState(() => {
-    return localStorage.getItem(`emulator_qt_sidebar_${avd.name}`) === 'true'
-  })
 
   const handleSave = async () => {
     setSaving(true)
@@ -437,7 +422,6 @@ export function EditAvdDialog({ avd, gpus, onClose, onSaved }) {
       localStorage.setItem(`emulator_quick_boot_${avd.name}`, String(quickBoot))
       localStorage.setItem(`emulator_boot_anim_${avd.name}`, String(bootAnim))
       localStorage.setItem(`emulator_ultra_gaming_${avd.name}`, String(ultraGaming))
-      localStorage.setItem(`emulator_qt_sidebar_${avd.name}`, String(showQtSidebar))
       onSaved()
     } else {
       alert(result.error || 'Failed to update configuration')
@@ -542,16 +526,6 @@ export function EditAvdDialog({ avd, gpus, onClose, onSaved }) {
               <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Load disk writes directly into physical RAM. Instant loads and zero stutter. Note: Discards gameplay updates/cache on shutdown.</div>
             </div>
             <div className={`toggle ${ultraGaming ? 'on' : ''}`} onClick={() => setUltraGaming(!ultraGaming)} />
-          </div>
-
-          <div className="divider" style={{ margin: '4px 0' }} />
-
-          <div className="flex items-center justify-between" style={{ padding: '2px 0' }}>
-            <div style={{ flex: 1, paddingRight: 16 }}>
-              <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 2 }}>🖥️ Show Qt Extended Sidebar</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Show the Android Emulator extended controls panel (location, battery, etc). <span style={{ color: '#f87171' }}>May cause boot crash on some systems.</span></div>
-            </div>
-            <div className={`toggle ${showQtSidebar ? 'on' : ''}`} onClick={() => setShowQtSidebar(!showQtSidebar)} />
           </div>
           
           <div className="modal-footer">

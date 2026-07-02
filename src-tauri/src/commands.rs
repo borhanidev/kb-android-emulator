@@ -15,7 +15,30 @@ extern "system" {
 const PROCESS_SET_INFORMATION: u32 = 0x0200;
 const HIGH_PRIORITY_CLASS: u32 = 0x00000080;
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 
+macro_rules! new_command {
+    ($cmd:expr) => {{
+        let mut c = std::process::Command::new($cmd);
+        #[cfg(windows)]
+        {
+            c.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        }
+        c
+    }};
+}
+
+macro_rules! new_tokio_command {
+    ($cmd:expr) => {{
+        let mut c = tokio::process::Command::new($cmd);
+        #[cfg(windows)]
+        {
+            c.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        }
+        c
+    }};
+}
 
 use std::sync::OnceLock;
 static RUNNING_AVDS: OnceLock<Mutex<HashMap<String, bool>>> = OnceLock::new();
@@ -225,7 +248,7 @@ fn num_cpus() -> usize {
 
 fn total_memory_mb() -> u64 {
     // Query via WMI/GlobalMemoryStatusEx via cmd
-    let out = std::process::Command::new("powershell")
+    let out = new_command!("powershell")
         .args(["-Command", "(Get-WmiObject Win32_ComputerSystem).TotalPhysicalMemory"])
         .output();
     if let Ok(o) = out {
@@ -238,7 +261,7 @@ fn total_memory_mb() -> u64 {
 }
 
 fn free_memory_mb() -> u64 {
-    let out = std::process::Command::new("powershell")
+    let out = new_command!("powershell")
         .args(["-Command", "(Get-WmiObject Win32_OperatingSystem).FreePhysicalMemory"])
         .output();
     if let Ok(o) = out {
@@ -251,7 +274,7 @@ fn free_memory_mb() -> u64 {
 }
 
 fn cpu_model() -> String {
-    let out = std::process::Command::new("powershell")
+    let out = new_command!("powershell")
         .args(["-Command", "(Get-WmiObject Win32_Processor).Name"])
         .output();
     if let Ok(o) = out {
@@ -263,7 +286,7 @@ fn cpu_model() -> String {
 // ─── GPU Detection ────────────────────────────────────────────────────────────
 #[tauri::command]
 pub fn detect_gpus() -> Vec<GpuInfo> {
-    let out = std::process::Command::new("powershell")
+    let out = new_command!("powershell")
         .args([
             "-Command",
             "Get-WmiObject Win32_VideoController | Select-Object Name, AdapterRAM | ConvertTo-Json",
@@ -363,7 +386,7 @@ pub fn set_gpu_preference(_gpu_index: usize, gpu_preference: u32) -> CommandResu
 pub fn check_hypervisor() -> HypervisorStatus {
     // Check if Hypervisor is active (WSL2 / Hyper-V / WHPX is running).
     // This query is instant and does NOT require Administrator elevation.
-    let hypervisor_present_out = std::process::Command::new("powershell")
+    let hypervisor_present_out = new_command!("powershell")
         .args([
             "-NoProfile",
             "-Command",
@@ -385,7 +408,7 @@ pub fn check_hypervisor() -> HypervisorStatus {
     }
 
     // Fallback: If hypervisor is NOT present, query if VT-x/AMD-V is enabled in BIOS
-    let vtx = std::process::Command::new("powershell")
+    let vtx = new_command!("powershell")
         .args([
             "-NoProfile",
             "-Command",
@@ -402,7 +425,7 @@ pub fn check_hypervisor() -> HypervisorStatus {
 // ─── Enable WHPX ─────────────────────────────────────────────────────────────
 #[tauri::command]
 pub fn enable_whpx() -> CommandResult {
-    let out = std::process::Command::new("powershell")
+    let out = new_command!("powershell")
         .args([
             "-Command",
             "Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -NoRestart",
@@ -514,7 +537,7 @@ async fn download_file_with_progress(
 }
 
 fn extract_zip(zip_path: &Path, dest: &Path) -> anyhow::Result<()> {
-    let status = std::process::Command::new("powershell")
+    let status = new_command!("powershell")
         .args([
             "-Command",
             &format!(
@@ -637,7 +660,7 @@ async fn run_sdkmanager_async(args: &[&str], task_key: &str, window: &Window) ->
     let args_str = all_args.iter().map(|a| format!("'{}'", a)).collect::<Vec<_>>().join(" ");
     let cmd_str = format!("& '{}' {}", bat.display(), args_str);
 
-    let mut cmd = tokio::process::Command::new("powershell");
+    let mut cmd = new_tokio_command!("powershell");
     cmd.args(["-NoProfile", "-Command", &cmd_str])
        .envs(&env)
        .current_dir(cmdline_dir())
@@ -729,7 +752,7 @@ pub fn accept_licenses(window: Window) -> CommandResult {
 
     let cmd_str = format!("& '{}' --licenses '{}'", bat.display(), sdk_root_arg);
 
-    let mut child = match std::process::Command::new("powershell")
+    let mut child = match new_command!("powershell")
         .args(["-NoProfile", "-Command", &cmd_str])
         .envs(&env)
         .current_dir(cmdline_dir())
@@ -844,7 +867,7 @@ pub async fn create_avd(options: CreateAvdOptions, window: Window) -> CommandRes
         options.system_image
     );
 
-    let mut cmd = tokio::process::Command::new("powershell");
+    let mut cmd = new_tokio_command!("powershell");
     cmd.args(["-NoProfile", "-Command", &cmd_str])
        .envs(&env)
        .current_dir(cmdline_dir())
@@ -971,7 +994,7 @@ pub async fn delete_avd(name: String, window: Window) -> CommandResult {
     // Use PowerShell call operator with single quotes for space safety
     let cmd_str = format!("& '{}' delete avd --name '{}'", bat.display(), name);
 
-    let mut cmd = tokio::process::Command::new("powershell");
+    let mut cmd = new_tokio_command!("powershell");
     cmd.args(["-NoProfile", "-Command", &cmd_str])
        .envs(&env)
        .current_dir(cmdline_dir())
@@ -1113,7 +1136,6 @@ pub fn launch_avd(
     no_bluetooth: Option<bool>,
     read_only: Option<bool>,
     wipe_data: Option<bool>,
-    show_qt_sidebar: Option<bool>,
     window: Window,
 ) -> CommandResult {
     // Auto-repair Wear OS configuration if it has corrupted phone settings
@@ -1286,17 +1308,10 @@ pub fn launch_avd(
         args.push(flag.to_string());
     }
 
-    // Suppress the Qt layered extended-window panel unless the user explicitly
-    // enabled it. On Windows, this panel can trigger a fatal
-    // UpdateLayeredWindowIndirect error when launched from an installed EXE.
-    if show_qt_sidebar != Some(true) {
-        args.push("-qt-hide-android-settings".to_string());
-    }
-
     let emulator_cwd = emulator_dir();
     // Spawn the emulator detached and pipe stdout; stderr is null-routed because
     // the emulator mirrors every log line to both streams — reading one is enough.
-    let child = std::process::Command::new(&emulator_exe)
+    let child = new_command!(&emulator_exe)
         .current_dir(&emulator_cwd)
         .args(&args)
         .env("ANDROID_AVD_HOME", &avd_home)
@@ -1407,12 +1422,12 @@ pub fn stop_avd(name: String, window: Window) -> CommandResult {
     // Use ADB to gracefully shut down
     let adb_exe = sdk_dir().join("platform-tools").join("adb.exe");
     if adb_exe.exists() {
-        let _ = std::process::Command::new(&adb_exe)
+        let _ = new_command!(&adb_exe)
             .args(["-s", "emulator-5554", "emu", "kill"])
             .output();
     }
     // Also kill via taskkill by name
-    let _ = std::process::Command::new("taskkill")
+    let _ = new_command!("taskkill")
         .args(["/F", "/IM", "emulator.exe"])
         .output();
     let _ = window.emit("log", format!("⏹ Stop signal sent to \"{}\"", name));
@@ -1445,7 +1460,7 @@ pub async fn fetch_sdk_packages(window: Window) -> Result<Vec<SdkPackageInfo>, S
 
     let cmd_str = format!("& '{}' --list", bat.display());
 
-    let child = std::process::Command::new("powershell")
+    let child = new_command!("powershell")
         .args(["-NoProfile", "-Command", &cmd_str])
         .envs(&env)
         .current_dir(cmdline_dir())
@@ -1818,7 +1833,7 @@ pub async fn optimize_guest_apps(window: Window) -> CommandResult {
     let _ = window.emit("log", "🔍 Scanning user-installed packages inside emulator...");
 
     // Get list of user installed packages (-3 option lists third party packages only)
-    let output = match std::process::Command::new(&adb_exe)
+    let output = match new_command!(&adb_exe)
         .args(["-s", "emulator-5554", "shell", "pm", "list", "packages", "-3"])
         .output() {
             Ok(o) => o,
@@ -1849,7 +1864,7 @@ pub async fn optimize_guest_apps(window: Window) -> CommandResult {
         let _ = window.emit("log", format!("⏳ [{}/{}] Optimizing compilation: {}...", idx + 1, total, pkg));
         
         // Execute compiler opt
-        let _ = std::process::Command::new(&adb_exe)
+        let _ = new_command!(&adb_exe)
             .args(["-s", "emulator-5554", "shell", "cmd", "package", "compile", "-m", "speed", "-f", pkg])
             .output();
     }
