@@ -8,12 +8,12 @@ const CORE_TOOLS = [
 ]
 
 const TABS = [
-  { id: 'stable_playstore', label: '🎮 Stable (Play Store)', icon: '📱' },
-  { id: 'stable_google',    label: '🔬 Stable (Google APIs)', icon: '🧪' },
-  { id: 'beta',             label: '🚀 Beta / Previews', icon: '⚡' },
-  { id: 'tv',              label: '📺 Android TV', icon: '📺' },
-  { id: 'wear',            label: '⌚ Wear OS', icon: '⌚' },
-  { id: 'automotive',      label: '🚗 Automotive', icon: '🚗' },
+  { id: 'stable_playstore', label: 'Stable (Play Store)', icon: '📱' },
+  { id: 'stable_google',    label: 'Stable (Google APIs)', icon: '🧪' },
+  { id: 'beta',             label: 'Beta / Previews', icon: '⚡' },
+  { id: 'tv',              label: 'Android TV', icon: '📺' },
+  { id: 'wear',            label: 'Wear OS', icon: '⌚' },
+  { id: 'automotive',      label: 'Automotive', icon: '🚗' },
 ]
 
 // Helper to parse package metadata dynamically and future-proof it
