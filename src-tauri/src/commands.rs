@@ -1154,6 +1154,7 @@ pub fn launch_avd(
     no_bluetooth: Option<bool>,
     read_only: Option<bool>,
     wipe_data: Option<bool>,
+    speed_mode: Option<bool>,
     window: Window,
 ) -> CommandResult {
     // Auto-repair Wear OS configuration if it has corrupted phone settings
@@ -1356,6 +1357,41 @@ pub fn launch_avd(
             get_running_avds().lock().unwrap().insert(name.clone(), true);
             let name_clone = name.clone();
             let window_clone = window.clone();
+
+            if let Some(true) = speed_mode {
+                let adb_exe = sdk_dir().join("platform-tools").join("adb.exe");
+                let name_clone3 = name.clone();
+                let window_clone3 = window.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(4));
+                    if adb_exe.exists() {
+                        let _ = std::process::Command::new(&adb_exe)
+                            .args(["wait-for-device"])
+                            .output();
+                        
+                        // Disable animations
+                        let _ = std::process::Command::new(&adb_exe)
+                            .args(["shell", "settings", "put", "global", "window_animation_scale", "0.0"])
+                            .output();
+                        let _ = std::process::Command::new(&adb_exe)
+                            .args(["shell", "settings", "put", "global", "transition_animation_scale", "0.0"])
+                            .output();
+                        let _ = std::process::Command::new(&adb_exe)
+                            .args(["shell", "settings", "put", "global", "animator_duration_scale", "0.0"])
+                            .output();
+                        
+                        // Disable HW Overlays in SurfaceFlinger
+                        let _ = std::process::Command::new(&adb_exe)
+                            .args(["shell", "service", "call", "SurfaceFlinger", "1008", "i32", "1"])
+                            .output();
+                        
+                        let _ = window_clone3.emit(
+                            "log",
+                            format!("⚡ Speed Mode applied to \"{}\": UI Animations disabled, GPU composition forced.", name_clone3),
+                        );
+                    }
+                });
+            }
 
             let stdout = c.stdout.take();
 

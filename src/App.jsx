@@ -128,6 +128,13 @@ export default function App() {
     const noBluetooth = localStorage.getItem('emulator_perf_no_bluetooth') === 'true'
 
     const readOnly = localStorage.getItem(`emulator_ultra_gaming_${name}`) === 'true'
+    
+    let speedModeVal = localStorage.getItem(`emulator_speed_mode_${name}`)
+    if (speedModeVal === null) {
+      speedModeVal = localStorage.getItem('emulator_speed_mode')
+    }
+    const speedMode = speedModeVal !== 'false'
+
     const result = await api.launchAvd({ 
       name, 
       gpuMode, 
@@ -139,6 +146,7 @@ export default function App() {
       noBluetooth,
       readOnly,
       wipeData,
+      speedMode,
     })
     if (result.ok) {
       toast(`🚀 Launching "${name}"...`, 'info')

@@ -438,6 +438,11 @@ export function EditAvdDialog({ avd, gpus, onClose, onSaved }) {
   const [ultraGaming, setUltraGaming] = useState(() => {
     return localStorage.getItem(`emulator_ultra_gaming_${avd.name}`) === 'true'
   })
+  const [speedMode, setSpeedMode] = useState(() => {
+    const val = localStorage.getItem(`emulator_speed_mode_${avd.name}`)
+    if (val !== null) return val === 'true'
+    return true
+  })
 
   const handleSave = async () => {
     setSaving(true)
@@ -455,6 +460,7 @@ export function EditAvdDialog({ avd, gpus, onClose, onSaved }) {
       localStorage.setItem(`emulator_quick_boot_${avd.name}`, String(quickBoot))
       localStorage.setItem(`emulator_boot_anim_${avd.name}`, String(bootAnim))
       localStorage.setItem(`emulator_ultra_gaming_${avd.name}`, String(ultraGaming))
+      localStorage.setItem(`emulator_speed_mode_${avd.name}`, String(speedMode))
       onSaved()
     } else {
       alert(result.error || 'Failed to update configuration')
@@ -559,6 +565,16 @@ export function EditAvdDialog({ avd, gpus, onClose, onSaved }) {
               <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Load disk writes directly into physical RAM. Instant loads and zero stutter. Note: Discards gameplay updates/cache on shutdown.</div>
             </div>
             <div className={`toggle ${ultraGaming ? 'on' : ''}`} onClick={() => setUltraGaming(!ultraGaming)} />
+          </div>
+
+          <div className="divider" style={{ margin: '4px 0' }} />
+
+          <div className="flex items-center justify-between" style={{ padding: '2px 0' }}>
+            <div style={{ flex: 1, paddingRight: 16 }}>
+              <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 2, color: 'var(--text-accent, #60a5fa)' }}>⚡ Speed Mode (Optimize Animations & GPU)</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Automatically disables system UI animations and forces GPU composition in SurfaceFlinger on boot for maximum gaming frame rates.</div>
+            </div>
+            <div className={`toggle ${speedMode ? 'on' : ''}`} onClick={() => setSpeedMode(!speedMode)} />
           </div>
           
           <div className="modal-footer">
