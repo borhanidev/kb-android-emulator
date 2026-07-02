@@ -1356,10 +1356,43 @@ pub fn launch_avd(
 
             let name_clone2 = name.clone();
             let window_clone2 = window.clone();
-            // Monitor the process in a thread
+            let avd_home_clone = avd_home.clone();
+            // Monitor the process in a thread.
+            // If the emulator exits within 10 seconds it almost certainly crashed on a
+            // corrupted Quick Boot snapshot. Auto-delete that snapshot folder and notify
+            // the frontend so the user can retry cleanly without manual Wipe & Boot.
             std::thread::spawn(move || {
+                let launch_time = std::time::Instant::now();
                 let _ = c.wait();
+                let elapsed = launch_time.elapsed().as_secs();
                 get_running_avds().lock().unwrap().remove(&name_clone2);
+
+                if elapsed < 10 {
+                    // Very early crash — likely a corrupt snapshot.
+                    // Delete the snapshots directory for this AVD so the next boot is clean.
+                    let snapshot_dir = std::path::Path::new(&avd_home_clone)
+                        .join(format!("{}.avd", name_clone2))
+                        .join("snapshots");
+                    if snapshot_dir.exists() {
+                        let _ = std::fs::remove_dir_all(&snapshot_dir);
+                        let _ = window_clone2.emit(
+                            "emulator-log",
+                            serde_json::json!({
+                                "name": name_clone2,
+                                "line": "⚠️ [KB] Emulator crashed immediately — corrupted snapshot auto-deleted. Please launch again for a clean cold boot."
+                            }),
+                        );
+                    } else {
+                        let _ = window_clone2.emit(
+                            "emulator-log",
+                            serde_json::json!({
+                                "name": name_clone2,
+                                "line": "⚠️ [KB] Emulator exited unexpectedly on launch. Try Wipe & Boot if it happens again."
+                            }),
+                        );
+                    }
+                }
+
                 let _ = window_clone2.emit("emulator-exit", serde_json::json!({ "name": name_clone2, "code": 0 }));
             });
             CommandResult { ok: true, error: None, output: Some(pid.to_string()) }
