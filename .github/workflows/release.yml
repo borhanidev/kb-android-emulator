@@ -1,0 +1,62 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New Version (e.g. 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Set Version in Project Files
+        shell: pwsh
+        run: |
+          $version = "${{ github.event.inputs.version }}"
+          if ($version) {
+            # Update package.json version
+            (Get-Content package.json) -replace '"version":\s*"[^"]+"', "`"version`": `"$version`"" | Set-Content package.json
+            
+            # Update tauri.conf.json version
+            (Get-Content src-tauri/tauri.conf.json) -replace '"version":\s*"[^"]+"', "`"version`": `"$version`"" | Set-Content src-tauri/tauri.conf.json
+            
+            Write-Host "Updated project versions to $version"
+          }
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build Tauri App and Create Release
+        uses: tauri-apps/tauri-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v${{ github.event.inputs.version }}
+          releaseName: 'KB Android Emulator Manager v${{ github.event.inputs.version }}'
+          releaseBody: '🚀 Standalone GPU-accelerated Android Emulator Manager for Windows.'
+          releaseDraft: true
+          prerelease: false
