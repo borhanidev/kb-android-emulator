@@ -9,7 +9,7 @@ const CORE_TOOLS = [
 
 const TABS = [
   { id: 'stable_playstore', label: 'Stable (Play Store)', icon: '📱' },
-  { id: 'stable_google',    label: 'Stable (Google APIs)', icon: '🧪' },
+  { id: 'stable_google',    label: 'Stable (Google APIs / AOSP)', icon: '🧪' },
   { id: 'beta',             label: 'Beta / Previews', icon: '⚡' },
   { id: 'tv',              label: 'Android TV', icon: '📺' },
   { id: 'wear',            label: 'Wear OS', icon: '⌚' },
