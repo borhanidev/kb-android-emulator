@@ -26,6 +26,7 @@ export const installJdk          = () => invoke('install_jdk')
 export const installCmdlineTools = () => invoke('install_cmdline_tools')
 export const acceptLicenses      = () => invoke('accept_licenses')
 export const installPackage      = (opts) => invoke('install_package', { packageId: opts.packageId })
+export const uninstallPackage    = (opts) => invoke('uninstall_package', { packageId: opts.packageId })
 export const fetchSdkPackages    = () => invoke('fetch_sdk_packages')
 
 // ─── AVD Management ───────────────────────────────────────────────────────────

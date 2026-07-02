@@ -8,13 +8,89 @@ const CORE_TOOLS = [
 ]
 
 const TABS = [
-  { id: 'stable_playstore', label: '🎮 Stable (Play Store)' },
-  { id: 'stable_google',    label: '🔬 Stable (Google APIs)' },
-  { id: 'beta',             label: '🚀 Beta / Preview' },
-  { id: 'tv',              label: '📺 Android TV' },
-  { id: 'wear',            label: '⌚ Wear OS' },
-  { id: 'automotive',      label: '🚗 Automotive' },
+  { id: 'stable_playstore', label: '🎮 Stable (Play Store)', icon: '📱' },
+  { id: 'stable_google',    label: '🔬 Stable (Google APIs)', icon: '🧪' },
+  { id: 'beta',             label: '🚀 Beta / Previews', icon: '⚡' },
+  { id: 'tv',              label: '📺 Android TV', icon: '📺' },
+  { id: 'wear',            label: '⌚ Wear OS', icon: '⌚' },
+  { id: 'automotive',      label: '🚗 Automotive', icon: '🚗' },
 ]
+
+// Helper to parse package metadata dynamically and future-proof it
+function parseImageDetails(img) {
+  const id = img.id || '';
+  const name = img.name || '';
+  
+  // Example ID: system-images;android-35;google_apis_playstore;x86_64
+  const parts = id.split(';');
+  
+  let apiLevel = 0;
+  let rawApi = "";
+  if (parts.length >= 2) {
+    rawApi = parts[1].replace('android-', '');
+    apiLevel = parseInt(rawApi) || 0;
+  }
+  
+  if (apiLevel === 0) {
+    const apiMatch = name.match(/API\s+(\d+)/i) || id.match(/android-(\d+)/i);
+    if (apiMatch) {
+      apiLevel = parseInt(apiMatch[1]) || 0;
+    }
+  }
+
+  // Determine Android OS Version
+  let androidVer = "";
+  if (apiLevel >= 33) {
+    androidVer = String(apiLevel - 20); // API 33 -> 13, API 34 -> 14, API 35 -> 15...
+  } else if (apiLevel === 31 || apiLevel === 32) {
+    androidVer = "12";
+  } else if (apiLevel === 30) {
+    androidVer = "11";
+  } else if (apiLevel > 0) {
+    androidVer = String(apiLevel - 20 > 0 ? apiLevel - 20 : apiLevel);
+  } else {
+    androidVer = "Preview";
+  }
+
+  const isWear = id.includes('wear') || name.toLowerCase().includes('wear');
+  const isTv = id.includes('tv') || id.includes('google-tv') || name.toLowerCase().includes('tv');
+  const isAuto = id.includes('automotive') || name.toLowerCase().includes('auto');
+  
+  let deviceType = "Phone / Tablet";
+  if (isWear) deviceType = "Wear OS Watch";
+  else if (isTv) deviceType = "Android TV";
+  else if (isAuto) deviceType = "Automotive Car";
+
+  // System services/APIs
+  let services = "Google APIs";
+  let shortServices = "Google APIs";
+  if (id.includes('playstore') || name.toLowerCase().includes('playstore') || name.toLowerCase().includes('play store')) {
+    services = "Google Play Store (with Services)";
+    shortServices = "Play Store";
+  } else if (id.includes('google_apis') || name.toLowerCase().includes('google apis')) {
+    services = "Google APIs Developer Image";
+    shortServices = "Google APIs";
+  } else {
+    services = "AOSP Pure Android";
+    shortServices = "AOSP";
+  }
+
+  const is16k = id.includes('ps16k') || id.includes('16k') || id.includes('16kb');
+  // API levels higher than 35 (Android 15) or explicit preview tags indicate Beta/Preview
+  const isPreview = id.includes('preview') || id.includes('beta') || name.toLowerCase().includes('preview') || name.toLowerCase().includes('beta') || is16k || apiLevel > 35;
+  const stability = isPreview ? "Beta / Preview" : "Stable";
+
+  return {
+    apiLevel,
+    androidVer,
+    deviceType,
+    services,
+    shortServices,
+    is16k,
+    isPreview,
+    stability
+  };
+}
 
 export function SdkManager({ status, refreshStatus }) {
   const [installing, setInstalling] = useState({})
@@ -24,6 +100,7 @@ export function SdkManager({ status, refreshStatus }) {
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState('stable_playstore')
   const [progress, setProgress] = useState({})
+  const [showCoreDetails, setShowCoreDetails] = useState(false)
 
   useEffect(() => {
     const unsubscribe = api.on('progress', (payload) => {
@@ -69,6 +146,24 @@ export function SdkManager({ status, refreshStatus }) {
     setInstalling(s => ({ ...s, [pkgId]: false }))
   }
 
+  const uninstallPkg = async (pkgId) => {
+    if (!confirm("⚠️ Are you sure you want to delete this system image? \n\nThis will remove the system files from your disk. Any created devices using this image won't be able to boot until reinstalled.")) return
+    setInstalling(s => ({ ...s, [pkgId]: true }))
+    setErrors(s => ({ ...s, [pkgId]: null }))
+    try {
+      const result = await api.uninstallPackage({ packageId: pkgId })
+      if (!result.ok) {
+        setErrors(s => ({ ...s, [pkgId]: result.error || 'Deletion failed' }))
+      } else {
+        if (refreshStatus) await refreshStatus()
+        await loadSdkImages()
+      }
+    } catch (e) {
+      setErrors(s => ({ ...s, [pkgId]: e.toString() }))
+    }
+    setInstalling(s => ({ ...s, [pkgId]: false }))
+  }
+
   const acceptLicenses = async () => {
     setInstalling(s => ({ ...s, _licenses: true }))
     try {
@@ -104,21 +199,36 @@ export function SdkManager({ status, refreshStatus }) {
   }
 
   const installedList = status?.installed_packages || []
+  const emulatorInstalled = status?.emulator_installed;
+  const platformToolsInstalled = status?.platform_tools_installed;
+  const coreToolsReady = emulatorInstalled && platformToolsInstalled;
 
   // Filter dynamic images based on active tab and search input
   const filteredImages = systemImages.filter(img => {
+    const details = parseImageDetails(img)
     const matchesSearch = img.name.toLowerCase().includes(search.toLowerCase()) || 
                           img.id.toLowerCase().includes(search.toLowerCase());
     if (!matchesSearch) return false
 
+    const isWear = img.id.includes('wear') || img.name.toLowerCase().includes('wear');
+    const isTv = img.id.includes('tv') || img.id.includes('google-tv') || img.name.toLowerCase().includes('tv');
+    const isAuto = img.id.includes('automotive') || img.name.toLowerCase().includes('automotive');
+
     switch (activeTab) {
-      case 'stable_playstore': return img.category === 'Stable (Play Store)';
-      case 'stable_google':    return img.category === 'Stable (Google APIs)';
-      case 'beta':             return img.category === 'Beta / Preview';
-      case 'tv':              return img.category === 'Android TV';
-      case 'wear':            return img.category === 'Wear OS';
-      case 'automotive':      return img.category === 'Automotive';
-      default:                return true;
+      case 'stable_playstore': 
+        return details.stability === 'Stable' && details.shortServices === 'Play Store' && !isWear && !isTv && !isAuto;
+      case 'stable_google':    
+        return details.stability === 'Stable' && details.shortServices !== 'Play Store' && !isWear && !isTv && !isAuto;
+      case 'beta':             
+        return details.stability === 'Beta / Preview' && !isWear && !isTv && !isAuto;
+      case 'tv':              
+        return isTv;
+      case 'wear':            
+        return isWear;
+      case 'automotive':      
+        return isAuto;
+      default:                
+        return true;
     }
   })
 
@@ -126,18 +236,16 @@ export function SdkManager({ status, refreshStatus }) {
   const dedupedImages = [];
   const seen = {};
   const sortedImagesForDedup = [...filteredImages].sort((a, b) => {
-    const matchA = a.id.match(/android-([\d.]+)/);
-    const matchB = b.id.match(/android-([\d.]+)/);
-    const verA = matchA ? parseFloat(matchA[1]) : 0;
-    const verB = matchB ? parseFloat(matchB[1]) : 0;
-    return verB - verA; // higher version first
+    const detailsA = parseImageDetails(a)
+    const detailsB = parseImageDetails(b)
+    return detailsB.apiLevel - detailsA.apiLevel; // higher API level first
   });
 
   sortedImagesForDedup.forEach(img => {
     const idParts = img.id.split(';');
     if (idParts.length >= 4) {
       const rawVer = idParts[1].replace('android-', '');
-      const baseVer = rawVer.split('.')[0]; // e.g. "36" from "36.1"
+      const baseVer = rawVer.split('.')[0]; // e.g. "35"
       const variant = idParts[2];
       const key = `${baseVer}-${variant}`;
       if (!seen[key]) {
@@ -149,26 +257,22 @@ export function SdkManager({ status, refreshStatus }) {
     }
   });
 
-  const [expandedGroups, setExpandedGroups] = useState({})
-
-  // Group dedupedImages by Android version (e.g. "Android 16 (API 36)")
+  // Group dedupedImages by API level dynamically (future-proof)
   const groups = {};
   dedupedImages.forEach(img => {
-    const parts = img.name.split(' · ');
-    const groupName = parts[0] || 'Unknown';
-    if (!groups[groupName]) {
-      groups[groupName] = [];
+    const details = parseImageDetails(img);
+    const key = String(details.apiLevel);
+    if (!groups[key]) {
+      groups[key] = [];
     }
-    groups[groupName].push(img);
+    groups[key].push(img);
   });
 
-  // Sort groups descending (e.g. Android 17 before Android 16)
-  const sortedGroupKeys = Object.keys(groups).sort((a, b) => {
-    const numA = parseInt(a.replace(/\D/g, '')) || 0;
-    const numB = parseInt(b.replace(/\D/g, '')) || 0;
-    return numB - numA;
-  });
+  // Sort groups descending (e.g. API 37 before API 36)
+  const sortedGroupKeys = Object.keys(groups).sort((a, b) => Number(b) - Number(a));
 
+  const [expandedGroups, setExpandedGroups] = useState({})
+  
   // Auto-expand the latest (first) group by default when tab/list changes
   useEffect(() => {
     if (sortedGroupKeys.length > 0) {
@@ -183,208 +287,282 @@ export function SdkManager({ status, refreshStatus }) {
   }, [activeTab, systemImages, search]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       
-      {/* ─── Part 1: Core Required Emulator Tools ─── */}
-      <div className="section">
-        <div className="section-title">⚙️ Core Required Emulator Tools</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {CORE_TOOLS.map(pkg => {
-            const isInstalled = installedList.includes(pkg.id) || 
-                                (pkg.id === 'emulator' && status?.emulator_installed) ||
-                                (pkg.id === 'platform-tools' && status?.platform_tools_installed);
-            const isInstalling = installing[pkg.id];
-            const pct = progress[pkg.id] || 0;
-            return (
-              <div key={pkg.id} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div className="pkg-row">
-                  <span style={{ fontSize: 22 }}>{pkg.icon}</span>
-                  <div style={{ flex: 1 }}>
-                    <div className="pkg-name">
-                      {pkg.name}
-                      <span className="badge badge-warn" style={{ marginLeft: 8 }}>Required</span>
-                      {isInstalled && <span className="badge badge-ok" style={{ marginLeft: 8 }}>Installed</span>}
+      {/* ─── Part 1: Core Required Emulator Tools (Compact Status Header) ─── */}
+      <div className="section" style={{ marginBottom: 8 }}>
+        {coreToolsReady ? (
+          <div className="alert" style={{ 
+            background: 'rgba(16, 185, 129, 0.04)', 
+            borderColor: 'rgba(16, 185, 129, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px 14px',
+            borderRadius: '6px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+              <span style={{ color: '#34d399', fontSize: 14 }}>🟢</span>
+              <span><strong>Emulator Core Engine</strong> is fully operational and ready.</span>
+            </div>
+            <button 
+              className="btn btn-ghost btn-sm" 
+              style={{ padding: '3px 8px', fontSize: 10 }}
+              onClick={() => setShowCoreDetails(!showCoreDetails)}
+            >
+              {showCoreDetails ? 'Hide Details' : 'Show Core Tools'}
+            </button>
+          </div>
+        ) : (
+          <div className="alert alert-warn" style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 10,
+            padding: '12px 14px',
+            borderRadius: '6px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+              <span style={{ color: '#fbbf24', fontSize: 14 }}>⚠️</span>
+              <span><strong>Core Emulator Tools are missing!</strong> You must download them to run or create virtual devices.</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {CORE_TOOLS.map(pkg => {
+                const installed = installedList.includes(pkg.id) || 
+                                  (pkg.id === 'emulator' && emulatorInstalled) ||
+                                  (pkg.id === 'platform-tools' && platformToolsInstalled);
+                if (installed) return null;
+                const isInstalling = installing[pkg.id];
+                return (
+                  <button key={pkg.id} className="btn btn-sm btn-primary" onClick={() => installPkg(pkg.id)} disabled={isInstalling}>
+                    {isInstalling ? <Spinner size={10} /> : '⬇ Download '} {pkg.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Expandable Core Tools list */}
+        {showCoreDetails && (
+          <div style={{ 
+            marginTop: 10, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 8,
+            padding: 10,
+            background: 'rgba(255,255,255,0.01)',
+            border: '1px dashed var(--border)',
+            borderRadius: 6
+          }}>
+            {CORE_TOOLS.map(pkg => {
+              const isInstalled = installedList.includes(pkg.id) || 
+                                  (pkg.id === 'emulator' && emulatorInstalled) ||
+                                  (pkg.id === 'platform-tools' && platformToolsInstalled);
+              const isInstalling = installing[pkg.id];
+              const pct = progress[pkg.id] || 0;
+              return (
+                <div key={pkg.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div className="pkg-row" style={{ padding: '6px 10px' }}>
+                    <span style={{ fontSize: 16 }}>{pkg.icon}</span>
+                    <div style={{ flex: 1 }}>
+                      <div className="pkg-name" style={{ fontSize: 12 }}>
+                        {pkg.name}
+                        {isInstalled && <span className="badge badge-ok" style={{ marginLeft: 8 }}>Installed</span>}
+                      </div>
                     </div>
-                    <div className="pkg-desc">{pkg.desc}</div>
-                    <div className="font-mono text-muted" style={{ fontSize: 10, marginTop: 3 }}>{pkg.id}</div>
+                    {!isInstalled && (
+                      <button className="btn btn-sm btn-primary" onClick={() => installPkg(pkg.id)} disabled={!!isInstalling}>
+                        {isInstalling ? <Spinner size={10} /> : '⬇ Install'}
+                      </button>
+                    )}
                   </div>
-                  {isInstalled ? (
-                    <button className="btn btn-sm btn-ghost" disabled style={{ opacity: 0.8, color: 'var(--text-green)', borderColor: 'rgba(16,185,129,0.3)' }}>
-                      ✅ Installed
-                    </button>
-                  ) : (
-                    <button className={`btn btn-sm ${isInstalling ? 'btn-ghost' : 'btn-primary'}`}
-                      onClick={() => installPkg(pkg.id)} disabled={!!isInstalling}>
-                      {isInstalling ? <><Spinner size={12} />Installing…</> : '⬇ Install'}
-                    </button>
+                  {isInstalling && (
+                    <div style={{ width: '100%', height: 3, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: 'var(--text-accent)' }} />
+                    </div>
                   )}
                 </div>
-                {isInstalling && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: '100%', padding: '0 12px 10px 12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-accent)' }}>
-                      <span>Downloading & extracting...</span>
-                      <span className="font-mono" style={{ fontWeight: 600 }}>{pct}%</span>
-                    </div>
-                    <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #7850ff, #a855f7)', borderRadius: 3, transition: 'width 0.2s ease-out' }} />
-                    </div>
-                  </div>
-                )}
-                {errors[pkg.id] && <div className="alert alert-danger" style={{ fontSize: 12, padding: '8px 12px' }}>❌ {errors[pkg.id]}</div>}
-              </div>
-            )
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      <div className="divider" />
-
-      {/* ─── Part 1.5: Installed System Images ─── */}
+      {/* ─── Part 1.5: Installed System Images (With Delete Capability) ─── */}
       {(() => {
         const installedImages = systemImages.filter(img => img.installed || installedList.includes(img.id));
         if (installedImages.length === 0) return null;
         return (
           <div className="section">
-            <div className="section-title">💾 Installed System Images (Ready to Use)</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="section-title">💾 Downloaded OS Images ({installedImages.length})</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {installedImages.map(img => {
                 const isInstalling = installing[img.id];
                 const pct = progress[img.id] || 0;
-                const parts = img.name.split(' · ');
-                const version = parts[0] || 'Android';
-                const variant = parts[1] || 'Google APIs';
-                const arch = parts[2] || 'x86_64';
+                const details = parseImageDetails(img);
                 
                 return (
-                  <div key={img.id} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <div className="pkg-row" style={{ background: 'rgba(16,185,129,0.03)', borderColor: 'rgba(16,185,129,0.15)' }}>
-                      <span style={{ fontSize: 22 }}>📱</span>
+                  <div key={img.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div className="pkg-row" style={{ 
+                      background: 'rgba(255,255,255,0.01)', 
+                      borderColor: 'rgba(255,255,255,0.06)',
+                      padding: '8px 12px'
+                    }}>
+                      <span style={{ fontSize: 18 }}>
+                        {details.typeLabel.startsWith('⌚') ? '⌚' : 
+                         details.typeLabel.startsWith('📺') ? '📺' : 
+                         details.typeLabel.startsWith('🚗') ? '🚗' : '📱'}
+                      </span>
                       <div style={{ flex: 1 }}>
-                        <div className="pkg-name" style={{ fontSize: 13, fontWeight: 600 }}>
-                          {version} · {variant}
-                          <span className="badge badge-ok" style={{ marginLeft: 8 }}>Ready</span>
+                        <div className="pkg-name" style={{ fontSize: 12, fontWeight: 600 }}>
+                          Android {details.androidVer} ({details.typeLabel})
+                          <span className={`badge ${details.isPreview ? 'badge-warn' : 'badge-ok'}`} style={{ marginLeft: 8, fontSize: 8 }}>
+                            {details.stability}
+                          </span>
+                          {details.is16k && <span className="badge badge-error" style={{ marginLeft: 4, fontSize: 8 }}>16 KB</span>}
                         </div>
-                        <div className="pkg-desc" style={{ fontSize: 11 }}>Architecture: <span className="font-mono">{arch}</span></div>
-                        <div className="font-mono text-muted" style={{ fontSize: 9, marginTop: 2 }}>{img.id}</div>
+                        <div className="pkg-desc" style={{ fontSize: 10, color: 'var(--text-secondary)' }}>
+                          {details.services} · <span className="font-mono">API {details.apiLevel}</span>
+                        </div>
                       </div>
-                      <button className={`btn btn-sm ${isInstalling ? 'btn-ghost' : 'btn-primary'}`}
-                        onClick={() => installPkg(img.id)} disabled={!!isInstalling}>
-                        {isInstalling ? <><Spinner size={10} />Updating…</> : '🔄 Update / Repair'}
-                      </button>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button className="btn btn-sm btn-ghost" style={{ padding: '4px 8px', fontSize: 10 }}
+                          onClick={() => installPkg(img.id)} disabled={!!isInstalling}>
+                          {isInstalling ? <Spinner size={10} /> : '🔄 Repair'}
+                        </button>
+                        <button className="btn btn-sm btn-ghost" style={{ 
+                          padding: '4px 8px', 
+                          fontSize: 10, 
+                          color: '#f87171', 
+                          borderColor: 'rgba(239, 68, 68, 0.15)'
+                        }}
+                          onClick={() => uninstallPkg(img.id)} disabled={!!isInstalling}>
+                          🗑️ Delete
+                        </button>
+                      </div>
                     </div>
                     {isInstalling && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: '100%', padding: '0 10px 8px 10px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-accent)' }}>
-                          <span>Updating system image...</span>
-                          <span className="font-mono" style={{ fontWeight: 600 }}>{pct}%</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', padding: '0 8px 6px 8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--text-accent)' }}>
+                          <span>Modifying system files...</span>
+                          <span className="font-mono">{pct}%</span>
                         </div>
-                        <div style={{ width: '100%', height: 5, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
-                          <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #7850ff, #a855f7)', borderRadius: 2, transition: 'width 0.2s ease-out' }} />
+                        <div className="progress-wrap" style={{ height: 4 }}>
+                          <div className="progress-bar" style={{ width: `${pct}%`, background: 'var(--text-accent)' }} />
                         </div>
                       </div>
                     )}
-                    {errors[img.id] && <div className="alert alert-danger" style={{ fontSize: 10, padding: '5px 8px' }}>❌ {errors[img.id]}</div>}
+                    {errors[img.id] && <div className="alert alert-danger" style={{ fontSize: 10, padding: '4px 8px' }}>❌ {errors[img.id]}</div>}
                   </div>
                 )
               })}
             </div>
-            <div className="divider" style={{ marginTop: 20 }} />
+            <div className="divider" style={{ marginTop: 14 }} />
           </div>
         )
       })()}
 
       {/* ─── Part 2: System Images Manager ─── */}
       <div className="section">
-        <div className="section-title">📦 Download Android System Images (All Versions, TV, Wear OS)</div>
+        <div className="section-title">📥 Browse & Download OS Images</div>
         
-        <div className="flex gap-2 mb-3" style={{ flexWrap: 'wrap' }}>
-          <button className="btn btn-ghost btn-sm" onClick={acceptLicenses} disabled={!!installing._licenses}>
-            {installing._licenses ? <><Spinner size={12} />Accepting...</> : '📜 Accept All SDK Licenses'}
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={loadSdkImages} disabled={loadingImages}>
-            {loadingImages ? <><Spinner size={12} />Fetching...</> : '🔄 Sync Google Repository'}
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+          {/* Tabs */}
+          <div className="tabs" style={{ margin: 0 }}>
+            {TABS.map(tab => (
+              <button 
+                key={tab.id} 
+                className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+                style={{ padding: '6px 10px', fontSize: 11 }}
+              >
+                <span style={{ marginRight: 4 }}>{tab.icon}</span>
+                {tab.label.split(' ')[1] || tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex gap-2">
+            <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: '5px 10px' }} onClick={acceptLicenses} disabled={!!installing._licenses}>
+              {installing._licenses ? <Spinner size={10} /> : '📜 Accept SDK Licenses'}
+            </button>
+            <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: '5px 10px' }} onClick={loadSdkImages} disabled={loadingImages}>
+              {loadingImages ? <Spinner size={10} /> : '🔄 Sync Repo'}
+            </button>
+          </div>
         </div>
 
-        {/* Search and Category Tabs */}
-        <div className="search-input-wrapper">
+        {/* Search */}
+        <div className="search-input-wrapper" style={{ marginBottom: 12 }}>
           <input 
             className="form-input search-input" 
-            placeholder="🔍 Search system images by API level, name, x86_64, etc..." 
+            placeholder="🔍 Filter system images (e.g. '35', 'google_apis', 'playstore')..." 
             value={search} 
-            onChange={e => setSearch(e.target.value)} 
+            onChange={e => setSearch(e.target.value)}
+            style={{ padding: '6px 10px', fontSize: 12 }}
           />
-        </div>
-
-        <div className="tabs">
-          {TABS.map(tab => (
-            <button 
-              key={tab.id} 
-              className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
         </div>
 
         {/* Dynamic Package List */}
         {loadingImages ? (
           <div className="flex items-center justify-center" style={{ padding: 40, gap: 12 }}>
-            <Spinner size={20} />
-            <span className="text-muted">Fetching all available system images from Google APIs...</span>
+            <Spinner size={16} />
+            <span className="text-muted" style={{ fontSize: 12 }}>Fetching latest package manifests from Google APIs...</span>
           </div>
         ) : filteredImages.length === 0 ? (
-          <div className="empty-state" style={{ padding: '30px 10px' }}>
-            <div className="empty-icon" style={{ fontSize: 32 }}>📦</div>
-            <div className="empty-title">No matches found</div>
-            <div className="empty-desc" style={{ fontSize: 12 }}>Try syncing the Google repository or searching with a different keyword.</div>
+          <div className="empty-state" style={{ padding: '24px 10px' }}>
+            <div className="empty-icon" style={{ fontSize: 24 }}>📦</div>
+            <div className="empty-title" style={{ fontSize: 12 }}>No images found matching criteria</div>
+            <div className="empty-desc" style={{ fontSize: 11 }}>Try clicking "Sync Repo" or clearing your search filter.</div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '65vh', overflowY: 'auto', paddingRight: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '55vh', overflowY: 'auto', paddingRight: 4 }}>
             {sortedGroupKeys.map(groupKey => {
               const groupImages = groups[groupKey];
               const isExpanded = !!expandedGroups[groupKey];
-              const installedCount = groupImages.filter(img => installedList.includes(img.id)).length;
+              const installedCount = groupImages.filter(img => installedList.includes(img.id) || img.installed).length;
               
+              // Format Title Dynamically
+              const firstDetails = parseImageDetails(groupImages[0]);
+              const versionTitle = `Android ${firstDetails.androidVer} (API ${groupKey})`;
+
               return (
                 <div key={groupKey} style={{ 
-                  background: 'rgba(255,255,255,0.015)', 
-                  borderRadius: 8, 
-                  border: '1px solid rgba(255,255,255,0.04)',
+                  background: 'rgba(255,255,255,0.01)', 
+                  borderRadius: 6, 
+                  border: '1px solid var(--border)',
                   overflow: 'hidden'
                 }}>
                   {/* Accordion Header */}
                   <div 
                     onClick={() => setExpandedGroups(s => ({ ...s, [groupKey]: !s[groupKey] }))}
                     style={{ 
-                      padding: '10px 14px', 
+                      padding: '8px 12px', 
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'space-between', 
                       cursor: 'pointer',
-                      background: isExpanded ? 'rgba(120,80,255,0.05)' : 'transparent',
-                      transition: 'background 0.2s ease',
+                      background: isExpanded ? 'rgba(255,255,255,0.02)' : 'transparent',
+                      transition: 'background 0.15s ease',
                       userSelect: 'none'
                     }}
-                    className="accordion-header"
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 14 }}>🤖</span>
-                      <span style={{ fontWeight: 600, fontSize: 13, color: isExpanded ? 'var(--text-accent)' : 'var(--text-primary)' }}>
-                        {groupKey}
+                      <span style={{ fontSize: 12 }}>💿</span>
+                      <span style={{ fontWeight: 600, fontSize: 12, color: isExpanded ? 'var(--text-accent)' : 'var(--text-primary)' }}>
+                        {versionTitle}
                       </span>
-                      <span className="badge" style={{ fontSize: 9, padding: '1px 5px', background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }}>
+                      <span className="badge" style={{ fontSize: 8, padding: '1px 4px', background: 'rgba(255,255,255,0.03)', color: 'var(--text-secondary)' }}>
                         {groupImages.length} {groupImages.length === 1 ? 'image' : 'images'}
                       </span>
                       {installedCount > 0 && (
-                        <span className="badge badge-ok" style={{ fontSize: 9, padding: '1px 5px' }}>
-                          {installedCount} Installed
+                        <span className="badge badge-ok" style={{ fontSize: 8, padding: '1px 4px' }}>
+                          {installedCount} Downloaded
                         </span>
                       )}
                     </div>
                     <span style={{ 
-                      fontSize: 10, 
+                      fontSize: 8, 
                       transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', 
                       transition: 'transform 0.15s ease',
                       color: 'var(--text-muted)'
@@ -396,52 +574,54 @@ export function SdkManager({ status, refreshStatus }) {
                   {/* Accordion Body */}
                   {isExpanded && (
                     <div style={{ 
-                      padding: '10px 12px', 
+                      padding: '8px 10px', 
                       display: 'flex', 
                       flexDirection: 'column', 
-                      gap: 8, 
-                      background: 'rgba(0,0,0,0.12)',
-                      borderTop: '1px solid rgba(255,255,255,0.03)' 
+                      gap: 6, 
+                      background: 'rgba(0,0,0,0.1)',
+                      borderTop: '1px solid var(--border)' 
                     }}>
                       {groupImages.map(img => {
                         const isInstalled = img.installed || installedList.includes(img.id);
                         const isInstalling = installing[img.id];
                         const pct = progress[img.id] || 0;
-                        const friendlySubName = img.name.split(' · ')[1] || img.name;
+                        const details = parseImageDetails(img);
+                        
                         return (
-                          <div key={img.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            <div className="pkg-row" style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.005)', border: '1px solid rgba(255,255,255,0.02)' }}>
+                          <div key={img.id} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            <div className="pkg-row" style={{ padding: '6px 8px', background: 'transparent' }}>
                               <div style={{ flex: 1 }}>
-                                <div className="pkg-name" style={{ fontSize: 12, fontWeight: 600 }}>
-                                  {friendlySubName}
-                                  {isInstalled && <span className="badge badge-ok" style={{ marginLeft: 8, padding: '1px 5px', fontSize: 9 }}>Installed</span>}
+                                <div className="pkg-name" style={{ fontSize: 11, fontWeight: 600 }}>
+                                  {details.services}
+                                  {isInstalled && <span className="badge badge-ok" style={{ marginLeft: 8, padding: '1px 4px', fontSize: 8 }}>Ready</span>}
+                                  {details.is16k && <span className="badge badge-error" style={{ marginLeft: 4, padding: '1px 4px', fontSize: 8 }}>16 KB</span>}
                                 </div>
-                                <div className="pkg-desc" style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{img.desc || 'System image for emulator'}</div>
                                 <div className="font-mono text-muted" style={{ fontSize: 8, marginTop: 1 }}>{img.id}</div>
                               </div>
                               {isInstalled ? (
-                                <button className="btn btn-sm btn-ghost" disabled style={{ opacity: 0.8, color: 'var(--text-green)', borderColor: 'rgba(16,185,129,0.2)' }}>
-                                  ✅ Installed
+                                <button className="btn btn-sm btn-ghost" style={{ padding: '2px 6px', fontSize: 9, color: 'var(--text-green)', borderColor: 'transparent', opacity: 0.8 }} disabled>
+                                  ✅ Ready
                                 </button>
                               ) : (
                                 <button className={`btn btn-sm ${isInstalling ? 'btn-ghost' : 'btn-primary'}`}
-                                  onClick={() => installPkg(img.id)} disabled={!!isInstalling}>
-                                  {isInstalling ? <><Spinner size={10} />Installing…</> : '⬇ Install'}
+                                  onClick={() => installPkg(img.id)} disabled={!!isInstalling}
+                                  style={{ padding: '4px 8px', fontSize: 10 }}>
+                                  {isInstalling ? <Spinner size={8} /> : '⬇ Download'}
                                 </button>
                               )}
                             </div>
                             {isInstalling && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: '100%', padding: '0 10px 8px 10px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-accent)' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', padding: '0 6px 4px 6px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--text-accent)' }}>
                                   <span>Downloading system image...</span>
-                                  <span className="font-mono" style={{ fontWeight: 600 }}>{pct}%</span>
+                                  <span className="font-mono">{pct}%</span>
                                 </div>
-                                <div style={{ width: '100%', height: 5, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
-                                  <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #7850ff, #a855f7)', borderRadius: 2, transition: 'width 0.2s ease-out' }} />
+                                <div className="progress-wrap" style={{ height: 3 }}>
+                                  <div className="progress-bar" style={{ width: `${pct}%`, background: 'var(--text-accent)' }} />
                                 </div>
                               </div>
                             )}
-                            {errors[img.id] && <div className="alert alert-danger" style={{ fontSize: 10, padding: '5px 8px' }}>❌ {errors[img.id]}</div>}
+                            {errors[img.id] && <div className="alert alert-danger" style={{ fontSize: 9, padding: '4px 6px' }}>❌ {errors[img.id]}</div>}
                           </div>
                         )
                       })}

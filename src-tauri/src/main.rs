@@ -56,6 +56,7 @@ fn main() {
             commands::install_cmdline_tools,
             commands::accept_licenses,
             commands::install_package,
+            commands::uninstall_package,
             commands::list_avds,
             commands::create_avd,
             commands::delete_avd,

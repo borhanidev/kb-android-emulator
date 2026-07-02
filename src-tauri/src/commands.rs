@@ -795,6 +795,24 @@ pub async fn install_package(package_id: String, window: Window) -> CommandResul
     }
 }
 
+// ─── Uninstall SDK package ────────────────────────────────────────────────────
+#[tauri::command]
+pub async fn uninstall_package(package_id: String, window: Window) -> CommandResult {
+    match run_sdkmanager_async(&["--uninstall", &package_id], &package_id, &window).await {
+        Ok(out) => {
+            let _ = window.emit("log", format!("🗑️ Uninstalled: {}", package_id));
+            let _ = window.emit(
+                "progress",
+                serde_json::json!({ "task": package_id, "pct": 100 }),
+            );
+            CommandResult { ok: true, error: None, output: Some(out) }
+        }
+        Err(e) => {
+            let _ = window.emit("log", format!("❌ Failed to uninstall: {}", e));
+            CommandResult { ok: false, error: Some(e.to_string()), output: None }
+        }
+    }
+}
 
 // ─── List AVDs ────────────────────────────────────────────────────────────────
 #[tauri::command]
