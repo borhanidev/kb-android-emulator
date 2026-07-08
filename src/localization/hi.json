@@ -30,8 +30,6 @@
   "settings_subtitle": "स्थानीयकरण, इंटरफ़ेस विकल्प और एमुलेटर डिफ़ॉल्ट प्रबंधित करें",
   "settings_section_interface": "इंटरफ़ेस सेटिंग्स",
   "settings_lang_label": "भाषा / अनुवाद",
-  "settings_emoji_label": "हर जगह इमोजी",
-  "settings_emoji_desc": "साइडबार, हेडर और लॉग में इमोजी दिखाएं",
   "settings_section_defaults": "एमुलेटर डिफ़ॉल्ट विकल्प",
   "settings_accel_label": "डिफ़ॉल्ट त्वरक (Accelerator)",
   "settings_gpu_label": "डिफ़ॉल्ट जीपीयू मोड",

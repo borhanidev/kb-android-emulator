@@ -1,4 +1,4 @@
-# 📱 KB Android Emulator Manager
+# KB Android Emulator Manager
 
 A modern, standalone desktop application built with **React** and **Tauri v2** to manage, configure, and optimize Android Virtual Devices (AVDs). 
 
@@ -6,21 +6,21 @@ It features advanced auto-tuning, system resource clamping, graphics pipeline se
 
 ---
 
-## ⚡ Core Features
+## Core Features
 
-*   **🎨 Premium Dark Interface:** A sleek, fully responsive dashboard built with custom glassmorphism components, detailed system resource monitors, and real-time log consoles.
-*   **🎮 GPU Accelerator Configuration:** Native dropdown controls to toggle between Gfxstream (`auto`), Hardware Passthrough (`host`), and CPU fallback (`software`) rendering pipelines.
-*   **🧠 Smart OS Auto-Tuning:** Dynamic configuration locks for specialized system images:
-    *   **⌚ Wear OS Watches:** Locks resources to 1GB RAM / 1 Core, sets a 128MB Dalvik heap, and strips conflicting resolution properties to guarantee circular watch face layouts boot stably.
-    *   **📺 Android TV:** Locks resources to 2GB RAM / 2 Cores and tunes Dalvik heap size.
-    *   **🚗 Android Automotive:** Locks resources to 4GB RAM / 4 Cores for optimal dashboard UI emulation.
-*   **🧹 Wipe & Boot Recovery:** A one-click diagnostic tool that launches the emulator with the `-wipe-data` flag to wipe corrupted Quick Boot snapshots and reset user space storage, instantly resolving boot loops.
-*   **⚡ Ahead-Of-Time (AOT) compiler optimizer:** Compile all user-installed guest applications directly to native machine code via ADB (`cmd package compile -m speed`) for up to 40% performance gains.
-*   **🌐 Network Acceleration:** Bypasses slirp DNS latencies by routing emulator traffic through Cloudflare's public resolver (`1.1.1.1`) and tunes QEMU TCP write window buffers on launch.
+*   **Premium Dark Interface:** A sleek, fully responsive dashboard built with custom glassmorphism components, detailed system resource monitors, and real-time log consoles.
+*   **GPU Accelerator Configuration:** Native dropdown controls to toggle between Gfxstream (`auto`), Hardware Passthrough (`host`), and CPU fallback (`software`) rendering pipelines.
+*   **Smart OS Auto-Tuning:** Dynamic configuration locks for specialized system images:
+    *   **Wear OS Watches:** Locks resources to 1GB RAM / 1 Core, sets a 128MB Dalvik heap, and strips conflicting resolution properties to guarantee circular watch face layouts boot stably.
+    *   **Android TV:** Locks resources to 2GB RAM / 2 Cores and tunes Dalvik heap size.
+    *   **Android Automotive:** Locks resources to 4GB RAM / 4 Cores for optimal dashboard UI emulation.
+*   **Wipe & Boot Recovery:** A one-click diagnostic tool that launches the emulator with the `-wipe-data` flag to wipe corrupted Quick Boot snapshots and reset user space storage, instantly resolving boot loops.
+*   **Ahead-Of-Time (AOT) compiler optimizer:** Compile all user-installed guest applications directly to native machine code via ADB (`cmd package compile -m speed`) for up to 40% performance gains.
+*   **Network Acceleration:** Bypasses slirp DNS latencies by routing emulator traffic through Cloudflare's public resolver (`1.1.1.1`) and tunes QEMU TCP write window buffers on launch.
 
 ---
 
-## 🛠️ Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -48,7 +48,7 @@ Ensure you have the following installed on your machine:
 
 ---
 
-## 🚀 Running & Building
+## Running & Building
 
 ### Run Development server
 Launches the hot-reloading Vite dev server and spawns the Tauri native Windows desktop container:
@@ -64,7 +64,7 @@ npm run tauri build
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 ├── src/                  # React Frontend UI

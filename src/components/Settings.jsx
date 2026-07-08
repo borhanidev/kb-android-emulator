@@ -1,9 +1,8 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Settings as SettingsIcon } from 'lucide-react'
 
 export function Settings({ 
-  emojisEnabled, 
-  setEmojisEnabled, 
   toast 
 }) {
   const { t, i18n } = useTranslation()
@@ -21,13 +20,16 @@ export function Settings({
     }
   })
   const handleSave = () => {
-    toast('💾 ' + t('ready') + '! Settings updated.', 'info')
+    toast(t('ready') + '! Settings updated.', 'info')
   }
 
   return (
     <div className="page fade-in">
       <div className="page-header">
-        <h1 className="page-title">{emojisEnabled ? '🛠️ ' : ''}{t('settings_title')}</h1>
+        <h1 className="page-title flex items-center gap-2">
+          <SettingsIcon size={20} />
+          {t('settings_title')}
+        </h1>
         <p className="page-subtitle">{t('settings_subtitle')}</p>
       </div>
 
@@ -47,23 +49,6 @@ export function Settings({
                   <option key={l.code} value={l.code}>{l.name}</option>
                 ))}
               </select>
-            </div>
-
-            <div className="divider" style={{ margin: '8px 0' }} />
-
-            <div className="flex items-center justify-between">
-              <div style={{ flex: 1, paddingRight: 16 }}>
-                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>
-                  {t('settings_emoji_label')}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                  {t('settings_emoji_desc')}
-                </div>
-              </div>
-              <div 
-                className={`toggle ${emojisEnabled ? 'on' : ''}`} 
-                onClick={() => setEmojisEnabled(!emojisEnabled)} 
-              />
             </div>
           </div>
         </div>
