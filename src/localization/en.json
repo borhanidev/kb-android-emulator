@@ -30,8 +30,6 @@
   "settings_subtitle": "Manage localization, interface options, and emulator defaults",
   "settings_section_interface": "Interface Settings",
   "settings_lang_label": "Language / Translation",
-  "settings_emoji_label": "Emojis Everywhere",
-  "settings_emoji_desc": "Show emojis in sidebar, headers, and logs",
   "settings_section_defaults": "Emulator Default Options",
   "settings_accel_label": "Default Accelerator",
   "settings_gpu_label": "Default GPU Mode",

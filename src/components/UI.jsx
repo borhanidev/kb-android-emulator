@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { CheckCircle2, XCircle, Info, AlertTriangle } from 'lucide-react'
 
 export function useToast() {
   const [toasts, setToasts] = useState([])
@@ -12,12 +13,17 @@ export function useToast() {
 
 export function ToastContainer({ toasts }) {
   if (!toasts.length) return null
-  const icons = { success: '✅', error: '❌', info: 'ℹ️', warn: '⚠️' }
+  const icons = {
+    success: <CheckCircle2 size={16} style={{ color: 'var(--text-green)' }} />,
+    error: <XCircle size={16} style={{ color: 'var(--text-pink)' }} />,
+    info: <Info size={16} style={{ color: 'var(--text-cyan)' }} />,
+    warn: <AlertTriangle size={16} style={{ color: '#fbbf24' }} />
+  }
   return (
     <div className="toast-container">
       {toasts.map(t => (
         <div key={t.id} className={`toast ${t.type}`}>
-          <span>{icons[t.type] || 'ℹ️'}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center' }}>{icons[t.type] || <Info size={16} />}</span>
           <span>{t.msg}</span>
         </div>
       ))}

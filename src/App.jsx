@@ -6,6 +6,27 @@ import { GpuSettings } from './components/GpuSettings.jsx'
 import { Settings } from './components/Settings.jsx'
 import * as api from './api.js'
 import { useTranslation } from 'react-i18next'
+import { 
+  Sliders, 
+  Package, 
+  Smartphone, 
+  Cpu, 
+  Terminal, 
+  Settings as SettingsIcon,
+  RefreshCw, 
+  Zap, 
+  Plus, 
+  AlertTriangle, 
+  Coffee, 
+  Wrench, 
+  Bot,
+  Play,
+  Pause,
+  CheckCircle2,
+  Trash2,
+  Download,
+  Info
+} from 'lucide-react'
 import './index.css'
 
 export default function App() {
@@ -15,29 +36,19 @@ export default function App() {
   const [emulatorLogs, setEmulatorLogs] = useState({})
 
   const { t, i18n } = useTranslation()
-  const [emojisEnabled, setEmojisEnabled] = useState(localStorage.getItem('emojis_enabled') !== 'false')
 
   const changeLang = (newLang) => {
     i18n.changeLanguage(newLang)
     localStorage.setItem('app_lang', newLang)
   }
 
-  const changeEmojisEnabled = (val) => {
-    setEmojisEnabled(val)
-    localStorage.setItem('emojis_enabled', String(val))
-  }
-
-  const emoji = useCallback((symbol) => {
-    return emojisEnabled ? symbol : ''
-  }, [emojisEnabled])
-
   const NAV = [
-    { id: 'setup',   icon: emoji('⚙️'),  label: t('nav_setup') },
-    { id: 'sdk',     icon: emoji('📦'), label: t('nav_sdk') },
-    { id: 'devices', icon: emoji('📱'), label: t('nav_devices') },
-    { id: 'gpu',     icon: emoji('🎮'), label: t('nav_gpu') },
-    { id: 'logs',    icon: emoji('📋'), label: t('nav_logs') },
-    { id: 'settings',icon: emoji('🛠️'),  label: t('nav_settings') },
+    { id: 'setup',   icon: <Sliders size={14} />,  label: t('nav_setup') },
+    { id: 'sdk',     icon: <Package size={14} />, label: t('nav_sdk') },
+    { id: 'devices', icon: <Smartphone size={14} />, label: t('nav_devices') },
+    { id: 'gpu',     icon: <Cpu size={14} />, label: t('nav_gpu') },
+    { id: 'logs',    icon: <Terminal size={14} />, label: t('nav_logs') },
+    { id: 'settings',icon: <SettingsIcon size={14} />,  label: t('nav_settings') },
   ]
   const [logCapture, setLogCapture] = useState(
     localStorage.getItem('emulator_log_capture') !== 'false'
@@ -81,7 +92,7 @@ export default function App() {
       }))
     })
     const offEmulatorExit = api.on('emulator-exit', ({ name }) => {
-      toast(`🛑 Emulator "${name}" stopped`, 'info')
+      toast(`Emulator "${name}" stopped`, 'info')
       refreshAvds()
     })
     return () => { offLog?.(); offProgress?.(); offEmulatorLog?.(); offEmulatorExit?.() }
@@ -175,17 +186,17 @@ export default function App() {
       rawLaunch,
     })
     if (result.ok) {
-      toast(`🚀 Launching "${name}"...`, 'info')
+      toast(`Launching "${name}"...`, 'info')
       setTimeout(refreshAvds, 500)
     } else {
-      toast(`❌ ${result.error}`, 'error')
+      toast(result.error, 'error')
     }
   }
 
   const handleStop = async (name) => {
     const result = await api.stopAvd({ name })
     if (result.ok) {
-      toast(`⏹ Stopped "${name}"`, 'info')
+      toast(`Stopped "${name}"`, 'info')
       setTimeout(refreshAvds, 500)
     }
   }
@@ -193,23 +204,23 @@ export default function App() {
   const handleDelete = async (name) => {
     const result = await api.deleteAvd({ name })
     if (result.ok) {
-      toast(`🗑️ Deleted "${name}"`, 'success')
+      toast(`Deleted "${name}"`, 'success')
       refreshAvds()
     }
   }
 
   const handleOptimizeApps = async () => {
     setOptimizing(true)
-    toast('⚡ Starting AOT compilation for all user apps...', 'info')
+    toast('Starting AOT compilation for all user apps...', 'info')
     try {
       const r = await api.optimizeGuestApps()
       if (r.ok) {
-        toast('✅ Optimization completed!', 'success')
+        toast('Optimization completed!', 'success')
       } else {
-        toast(`❌ Optimization failed: ${r.error || 'make sure emulator is running'}`, 'error')
+        toast(`Optimization failed: ${r.error || 'make sure emulator is running'}`, 'error')
       }
     } catch (e) {
-      toast(`❌ Error: ${e}`, 'error')
+      toast(`Error: ${e}`, 'error')
     }
     setOptimizing(false)
   }
@@ -218,7 +229,7 @@ export default function App() {
     setInstalling(s => ({ ...s, jdk: true }))
     const r = await api.installJdk()
     setInstalling(s => ({ ...s, jdk: false }))
-    toast(r.ok ? '✅ JDK installed!' : `❌ JDK failed: ${r.error}`, r.ok ? 'success' : 'error')
+    toast(r.ok ? 'JDK installed!' : `JDK failed: ${r.error}`, r.ok ? 'success' : 'error')
     refreshStatus()
   }
 
@@ -226,7 +237,7 @@ export default function App() {
     setInstalling(s => ({ ...s, cmdline: true }))
     const r = await api.installCmdlineTools()
     setInstalling(s => ({ ...s, cmdline: false }))
-    toast(r.ok ? '✅ cmdline-tools installed!' : `❌ Failed: ${r.error}`, r.ok ? 'success' : 'error')
+    toast(r.ok ? 'cmdline-tools installed!' : `Failed: ${r.error}`, r.ok ? 'success' : 'error')
     refreshStatus()
   }
 
@@ -234,7 +245,17 @@ export default function App() {
 
   const StatusDot = ({ ok }) => (
     <span className={`badge ${ok ? 'badge-ok' : 'badge-warn'}`}>
-      {ok ? '✅ Installed' : '⚠️ Not installed'}
+      {ok ? (
+        <span className="flex items-center gap-1">
+          <CheckCircle2 size={10} />
+          Installed
+        </span>
+      ) : (
+        <span className="flex items-center gap-1">
+          <AlertTriangle size={10} />
+          Not installed
+        </span>
+      )}
     </span>
   )
 
@@ -254,11 +275,11 @@ export default function App() {
         {status && (
           <div className="flex gap-2 items-center" style={{ fontSize: 11 }}>
             {allReady
-              ? <span className="badge badge-ok">🟢 {t('ready')}</span>
-              : <span className="badge badge-warn">⚠️ {t('setup_required')}</span>
+              ? <span className="badge badge-ok flex items-center gap-1"><CheckCircle2 size={10} /> {t('ready')}</span>
+              : <span className="badge badge-warn flex items-center gap-1"><AlertTriangle size={10} /> {t('setup_required')}</span>
             }
             {avds.filter(a => a.running).length > 0 && (
-              <span className="badge badge-running">
+              <span className="badge badge-running flex items-center gap-1">
                 <span className="dot" />
                 {avds.filter(a => a.running).length} {t('running')}
               </span>
@@ -266,17 +287,17 @@ export default function App() {
             {/* Log capture quick-toggle — always accessible from any page */}
             <span
               id="btn-log-capture-toggle"
-              className={`badge ${logCapture ? 'badge-ok' : 'badge-warn'}`}
+              className={`badge ${logCapture ? 'badge-ok' : 'badge-warn'} flex items-center gap-1`}
               onClick={() => {
                 const next = !logCapture
                 setLogCapture(next)
                 localStorage.setItem('emulator_log_capture', String(next))
-                toast(next ? '🟢 Emulator log capture ON' : '🔴 Emulator log capture OFF', 'info')
+                toast(next ? 'Emulator log capture ON' : 'Emulator log capture OFF', 'info')
               }}
               title={logCapture ? 'Log capture ON — click to pause' : 'Log capture OFF — click to resume'}
               style={{ cursor: 'pointer', userSelect: 'none' }}
             >
-              {logCapture ? '🟢 Log ON' : '🔴 Log OFF'}
+              {logCapture ? <span className="flex items-center gap-1"><Play size={10} />Log ON</span> : <span className="flex items-center gap-1"><Pause size={10} />Log OFF</span>}
             </span>
           </div>
         )}
@@ -321,41 +342,51 @@ export default function App() {
             <div className="page">
               <div className="page-header flex items-center justify-between">
                 <div>
-                  <h1 className="page-title">{emoji('📱 ')}{t('devices_title')}</h1>
+                  <h1 className="page-title flex items-center gap-2">
+                    <Smartphone size={20} />
+                    {t('devices_title')}
+                  </h1>
                   <p className="page-subtitle">{t('devices_subtitle')}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button className="btn btn-ghost btn-sm" onClick={refreshAvds}>{emoji('🔄 ')}{t('devices_refresh')}</button>
+                  <button className="btn btn-ghost btn-sm flex items-center gap-1" onClick={refreshAvds}>
+                    <RefreshCw size={12} />
+                    {t('devices_refresh')}
+                  </button>
                   <button 
-                    className="btn btn-ghost btn-sm" 
+                    className="btn btn-ghost btn-sm flex items-center gap-1" 
                     onClick={handleOptimizeApps}
                     disabled={optimizing || avds.filter(a => a.running).length === 0}
                     title="Pre-compiles installed games/apps to native machine code to eliminate JIT stuttering. Requires a running emulator."
                   >
-                    {optimizing ? emoji('⚡ ') + 'Optimizing...' : emoji('⚡ ') + t('devices_optimize')}
+                    <Zap size={12} />
+                    {optimizing ? 'Optimizing...' : t('devices_optimize')}
                   </button>
-                  <button className="btn btn-primary" onClick={() => setShowCreate(true)}
+                  <button className="btn btn-primary flex items-center gap-1" onClick={() => setShowCreate(true)}
                     disabled={!allReady} id="btn-create-device">
-                    {emoji('＋ ')}{t('devices_new')}
+                    <Plus size={12} />
+                    {t('devices_new')}
                   </button>
                 </div>
               </div>
 
               {!allReady && (
-                <div className="alert alert-warn" style={{ marginBottom: 20 }}>
-                  {emoji('⚠️ ')}Setup is incomplete. Go to <strong>Setup / Install</strong> first.
+                <div className="alert alert-warn flex items-center gap-2" style={{ marginBottom: 20 }}>
+                  <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+                  <span>Setup is incomplete. Go to <strong>Setup / Install</strong> first.</span>
                 </div>
               )}
 
               {avds.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-icon">{emoji('📱')}</div>
+                  <div className="empty-icon"><Smartphone size={40} style={{ opacity: 0.25 }} /></div>
                   <div className="empty-title">{t('devices_empty_title')}</div>
                   <div className="empty-desc">
                     {t('devices_empty_desc')}
                   </div>
-                  <button className="btn btn-primary" onClick={() => setShowCreate(true)} disabled={!allReady}>
-                    {emoji('＋ ')}{t('devices_create_first')}
+                  <button className="btn btn-primary flex items-center gap-1" onClick={() => setShowCreate(true)} disabled={!allReady}>
+                    <Plus size={12} />
+                    {t('devices_create_first')}
                   </button>
                 </div>
               ) : (
@@ -378,7 +409,10 @@ export default function App() {
           {page === 'sdk' && (
             <div className="page">
               <div className="page-header">
-                <h1 className="page-title">{emoji('📦 ')}{t('sdk_title')}</h1>
+                <h1 className="page-title flex items-center gap-2">
+                  <Package size={20} />
+                  {t('sdk_title')}
+                </h1>
                 <p className="page-subtitle">{t('sdk_subtitle')}</p>
               </div>
               {status?.cmdline_installed
@@ -393,7 +427,10 @@ export default function App() {
                     errors={sdkErrors}
                     setErrors={setSdkErrors}
                   />
-                : <div className="alert alert-warn">{emoji('⚠️ ')}Please install cmdline-tools first from the <strong>Setup</strong> page.</div>
+                : <div className="alert alert-warn flex items-center gap-2">
+                    <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+                    <span>Please install cmdline-tools first from the <strong>Setup</strong> page.</span>
+                  </div>
               }
             </div>
           )}
@@ -402,7 +439,10 @@ export default function App() {
           {page === 'gpu' && (
             <div className="page">
               <div className="page-header">
-                <h1 className="page-title">{emoji('🎮 ')}{t('gpu_title')}</h1>
+                <h1 className="page-title flex items-center gap-2">
+                  <Cpu size={20} />
+                  {t('gpu_title')}
+                </h1>
                 <p className="page-subtitle">{t('gpu_subtitle')}</p>
               </div>
               <GpuSettings 
@@ -420,18 +460,22 @@ export default function App() {
           {page === 'setup' && (
             <div className="page">
               <div className="page-header">
-                <h1 className="page-title">{emoji('⚙️ ')}{t('setup_title')}</h1>
+                <h1 className="page-title flex items-center gap-2">
+                  <Sliders size={20} />
+                  {t('setup_title')}
+                </h1>
                 <p className="page-subtitle">{t('setup_subtitle')}</p>
               </div>
 
-              <div className="alert alert-info" style={{ marginBottom: 24 }}>
-                {emoji('🚀 ')}{t('setup_warn')}
+              <div className="alert alert-info flex items-start gap-2" style={{ marginBottom: 24 }}>
+                <Info size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+                <span>{t('setup_warn')}</span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {[
                   {
-                    step: 1, key: 'jdk', icon: emoji('☕'),
+                    step: 1, key: 'jdk', icon: <Coffee size={20} />,
                     title: 'Portable OpenJDK 21',
                     desc: 'Eclipse Temurin JDK 21 — required to run sdkmanager and avdmanager. Stored locally, no global install.',
                     size: '~180 MB',
@@ -441,7 +485,7 @@ export default function App() {
                     requires: false,
                   },
                   {
-                    step: 2, key: 'cmdline', icon: emoji('🔧'),
+                    step: 2, key: 'cmdline', icon: <Wrench size={20} />,
                     title: 'Android Command Line Tools',
                     desc: 'Official Google sdkmanager & avdmanager — to install emulator, platform tools, and system images.',
                     size: '~130 MB',
@@ -451,7 +495,7 @@ export default function App() {
                     requires: !status?.jdk_installed,
                   },
                   {
-                    step: 3, key: 'emulator', icon: emoji('🤖'),
+                    step: 3, key: 'emulator', icon: <Bot size={20} />,
                     title: 'Android Emulator Engine',
                     desc: 'Install via SDK Manager → "emulator" package once cmdline-tools are ready.',
                     size: '~300 MB',
@@ -464,7 +508,7 @@ export default function App() {
                     <div className="flex items-center gap-3" style={{ marginBottom: 12 }}>
                       <div className="stat-icon" style={{
                         background: item.installed ? 'rgba(16,185,129,0.15)' : 'rgba(120,80,255,0.15)',
-                        fontSize: 22, width: 48, height: 48,
+                        width: 48, height: 48,
                       }}>{item.icon}</div>
                       <div style={{ flex: 1 }}>
                         <div className="flex items-center gap-2">
@@ -474,16 +518,19 @@ export default function App() {
                           <StatusDot ok={item.installed} />
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>{item.desc}</div>
-                        <div className="badge badge-gpu" style={{ marginTop: 6 }}>📦 {item.size}</div>
+                        <div className="badge badge-gpu flex items-center gap-1" style={{ marginTop: 6 }}>
+                          <Package size={10} />
+                          {item.size}
+                        </div>
                       </div>
                       {item.onInstall && (
                         <button
-                          className={`btn ${item.installed ? 'btn-ghost' : 'btn-primary'} btn-sm`}
+                          className={`btn ${item.installed ? 'btn-ghost' : 'btn-primary'} btn-sm flex items-center gap-1`}
                           onClick={item.onInstall}
                           disabled={item.loading || item.requires || item.installed}
                           id={`btn-install-${item.key}`}
                         >
-                          {item.loading ? <><Spinner size={13} />Downloading…</> : item.installed ? '✅ Installed' : '⬇ Download & Install'}
+                          {item.loading ? <><Spinner size={13} />Downloading…</> : item.installed ? 'Installed' : <><Download size={12} />Download & Install</>}
                         </button>
                       )}
                       {!item.onInstall && !item.installed && (
@@ -502,16 +549,18 @@ export default function App() {
                       </div>
                     )}
                     {item.requires && (
-                      <div className="alert alert-warn mt-2" style={{ fontSize: 12 }}>
-                        {emoji('⚠️ ')}Requires Step {item.step - 1} to be installed first.
+                      <div className="alert alert-warn mt-2 flex items-center gap-2" style={{ fontSize: 12 }}>
+                        <AlertTriangle size={12} style={{ flexShrink: 0 }} />
+                        <span>Requires Step {item.step - 1} to be installed first.</span>
                       </div>
                     )}
                   </div>
                 ))}
 
                 {allReady && (
-                  <div className="alert alert-success">
-                    🎉 All components installed! Go to <strong>SDK Manager</strong> to install a system image, then <strong>My Devices</strong> to create your first device.
+                  <div className="alert alert-success flex items-start gap-2">
+                    <CheckCircle2 size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+                    <span>All components installed! Go to <strong>SDK Manager</strong> to install a system image, then <strong>My Devices</strong> to create your first device.</span>
                   </div>
                 )}
               </div>
@@ -521,8 +570,6 @@ export default function App() {
           {/* ─── Settings Page ─── */}
           {page === 'settings' && (
             <Settings 
-              emojisEnabled={emojisEnabled}
-              setEmojisEnabled={changeEmojisEnabled}
               toast={toast}
             />
           )}
@@ -532,30 +579,40 @@ export default function App() {
             <div className="page">
               <div className="page-header flex items-center justify-between">
                 <div>
-                  <h1 className="page-title">{emoji('📋 ')}{t('logs_title')}</h1>
+                  <h1 className="page-title flex items-center gap-2">
+                    <Terminal size={20} />
+                    {t('logs_title')}
+                  </h1>
                   <p className="page-subtitle">{t('logs_subtitle')}</p>
                 </div>
-                <button className="btn btn-ghost btn-sm" onClick={() => setLogs([])}>{emoji('🗑️ ')}{t('logs_clear')}</button>
+                <button className="btn btn-ghost btn-sm flex items-center gap-1" onClick={() => setLogs([])}>
+                  <Trash2 size={12} />
+                  {t('logs_clear')}
+                </button>
               </div>
               <ConsoleLog lines={logs} />
 
               {/* ── Emulator Log Section ── */}
               <div className="divider" style={{ margin: '20px 0 12px' }} />
               <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
-                <div className="section-title" style={{ margin: 0 }}>{emoji('📋 ')}{t('logs_capture_title')}</div>
+                <div className="section-title flex items-center gap-2" style={{ margin: 0 }}>
+                  <Terminal size={14} />
+                  {t('logs_capture_title')}
+                </div>
                 <div className="flex gap-2">
                   {Object.keys(emulatorLogs).length > 0 && (
                     <button
-                      className="btn btn-ghost btn-sm"
+                      className="btn btn-ghost btn-sm flex items-center gap-1"
                       onClick={() => setEmulatorLogs({})}
                       title="Clear all emulator log output"
                     >
-                      {emoji('🗑️ ')}Clear Log
+                      <Trash2 size={12} />
+                      Clear Log
                     </button>
                   )}
                   <button
                     id="btn-log-capture-toggle"
-                    className={`btn btn-sm ${logCapture ? 'btn-primary' : 'btn-ghost'}`}
+                    className={`btn btn-sm flex items-center gap-1 ${logCapture ? 'btn-primary' : 'btn-ghost'}`}
                     onClick={() => {
                       const next = !logCapture
                       setLogCapture(next)
@@ -563,21 +620,25 @@ export default function App() {
                     }}
                     title={logCapture ? 'Click to pause log capture' : 'Click to resume log capture'}
                   >
-                    {logCapture ? emoji('🟢 ') + 'Capturing' : emoji('🔴 ') + 'Paused'}
+                    {logCapture ? <span className="flex items-center gap-1"><Play size={12} />Capturing</span> : <span className="flex items-center gap-1"><Pause size={12} />Paused</span>}
                   </button>
                 </div>
               </div>
 
               {!logCapture && (
-                <div className="alert alert-warn" style={{ marginBottom: 12, fontSize: 13 }}>
-                  {emoji('⏸️ ')}{t('logs_paused_warn')}
+                <div className="alert alert-warn flex items-center gap-2" style={{ marginBottom: 12, fontSize: 13 }}>
+                  <Pause size={14} style={{ flexShrink: 0 }} />
+                  <span>{t('logs_paused_warn')}</span>
                 </div>
               )}
 
               {Object.keys(emulatorLogs).length > 0 ? (
                 Object.entries(emulatorLogs).map(([name, lines]) => (
                   <div key={name} style={{ marginBottom: 16 }}>
-                    <div className="card-title" style={{ marginBottom: 8 }}>{emoji('📱 ')}{name}</div>
+                    <div className="card-title flex items-center gap-2" style={{ marginBottom: 8 }}>
+                      <Smartphone size={14} />
+                      {name}
+                    </div>
                     <ConsoleLog lines={lines} />
                   </div>
                 ))
