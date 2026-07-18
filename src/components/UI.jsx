@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { CheckCircle2, XCircle, Info, AlertTriangle } from 'lucide-react'
+import { CheckCircle2, XCircle, Info, AlertTriangle, Check, ChevronDown } from 'lucide-react'
 
 export function useToast() {
   const [toasts, setToasts] = useState([])
@@ -43,6 +43,57 @@ export function Spinner({ size = 18 }) {
   return <div className="spinner" style={{ width: size, height: size }} />
 }
 
+export function CustomSelect({ value, onChange, options = [], placeholder = 'Select', disabled = false }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const selected = options.find(opt => String(opt.value) === String(value))
+
+  return (
+    <div className="custom-select" ref={ref}>
+      <button
+        type="button"
+        className="custom-select-trigger"
+        onClick={() => !disabled && setOpen(o => !o)}
+        disabled={disabled}
+      >
+        <span className="custom-select-label">{selected?.label || placeholder}</span>
+        <ChevronDown size={14} style={{ color: 'var(--text-muted)' }} />
+      </button>
+
+      {open && (
+        <div className="custom-select-menu">
+          {options.map(opt => (
+            <button
+              key={String(opt.value)}
+              type="button"
+              className={`custom-select-option ${String(value) === String(opt.value) ? 'active' : ''}`}
+              onClick={() => {
+                onChange(opt.value)
+                setOpen(false)
+              }}
+            >
+              <span>{opt.label}</span>
+              {String(value) === String(opt.value) && <Check size={12} style={{ color: 'var(--text-accent)' }} />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function ConsoleLog({ lines = [] }) {
   const ref = useRef(null)
   useEffect(() => {
@@ -50,10 +101,10 @@ export function ConsoleLog({ lines = [] }) {
   }, [lines])
 
   const classify = (line) => {
-    if (/✅|success|installed|done/i.test(line)) return 'success'
-    if (/❌|error|fail|exception/i.test(line)) return 'error'
+    if (/success|installed|done|completed/i.test(line)) return 'success'
+    if (/error|fail|exception/i.test(line)) return 'error'
     if (/warn|warning/i.test(line)) return 'warn'
-    if (/📥|📦|🚀|▶|info/i.test(line)) return 'info'
+    if (/download|install|launch|starting|ready|info/i.test(line)) return 'info'
     return ''
   }
 

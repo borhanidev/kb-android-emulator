@@ -25,7 +25,10 @@ import {
   CheckCircle2,
   Trash2,
   Download,
-  Info
+  Info,
+  Minus,
+  Square,
+  X
 } from 'lucide-react'
 import './index.css'
 
@@ -262,7 +265,7 @@ export default function App() {
   return (
     <div className="app-shell">
       {/* ── Title Bar ── */}
-      <div className="titlebar">
+      <div className="titlebar" data-tauri-drag-region>
         <div className="titlebar-logo">
           <img src="/icon.png" alt="Logo" style={{ width: '20px', height: '20px', borderRadius: '4px', objectFit: 'contain' }} />
           <span className="app-name" style={{ marginLeft: '8px' }}>KB Android Emulator</span>
@@ -303,9 +306,15 @@ export default function App() {
         )}
 
         <div className="titlebar-controls">
-          <button className="titlebar-btn min" onClick={() => api.minimizeWindow()} title="Minimize" />
-          <button className="titlebar-btn max" onClick={() => api.maximizeWindow()} title="Maximize" />
-          <button className="titlebar-btn close" onClick={() => api.closeWindow()} title="Close" />
+          <button className="titlebar-btn titlebar-btn-min" onClick={() => api.minimizeWindow()} title="Minimize" aria-label="Minimize window">
+            <Minus size={12} />
+          </button>
+          <button className="titlebar-btn titlebar-btn-max" onClick={() => api.maximizeWindow()} title="Maximize" aria-label="Maximize window">
+            <Square size={11} />
+          </button>
+          <button className="titlebar-btn titlebar-btn-close" onClick={() => api.closeWindow()} title="Close" aria-label="Close window">
+            <X size={12} />
+          </button>
         </div>
       </div>
 
@@ -452,7 +461,6 @@ export default function App() {
                 sysInfo={sysInfo} 
                 loading={loadingHardware} 
                 onRescan={refreshHardware}
-                emojisEnabled={emojisEnabled}
               />
             </div>
           )}
@@ -663,7 +671,7 @@ export default function App() {
           onClose={() => setShowCreate(false)}
           onCreated={() => {
             setShowCreate(false)
-            toast('✅ Device created successfully!', 'success')
+            toast('Device created successfully!', 'success')
             refreshAvds()
           }}
         />
@@ -675,7 +683,7 @@ export default function App() {
           onClose={() => setEditingAvd(null)}
           onSaved={() => {
             setEditingAvd(null)
-            toast('✅ Device configuration updated!', 'success')
+            toast('Device configuration updated!', 'success')
             refreshAvds()
           }}
         />

@@ -1,11 +1,28 @@
 import { useState, useEffect } from 'react'
+import {
+  AlertTriangle,
+  BatteryMedium,
+  BluetoothOff,
+  CameraOff,
+  ChevronDown,
+  ChevronUp,
+  Cpu,
+  Gamepad2,
+  Gauge,
+  HardDrive,
+  MapPinOff,
+  MonitorCog,
+  RefreshCw,
+  Rocket,
+  ShieldCheck,
+  Sparkles,
+  Wrench,
+  Zap,
+} from 'lucide-react'
 import { Spinner } from './UI.jsx'
 import * as api from '../api.js'
 
-export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onRescan, emojisEnabled = true }) {
-  // Local emoji helper — respects the global "Emoji Everywhere" setting
-  const emoji = (symbol) => emojisEnabled ? symbol : ''
-
+export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onRescan }) {
   const [selectedGpu, setSelectedGpu] = useState(() => {
     if (!gpus || gpus.length === 0) return null;
     const dGpu = gpus.find(x => x.is_dedicated);
@@ -47,21 +64,21 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
     const val = !currentVal
     setter(val)
     localStorage.setItem(key, String(val))
-    toast(val ? `${emoji('🔇')} ${label} disabled for speed` : `${emoji('🔊')} ${label} enabled`, 'success')
+    toast(val ? `${label} disabled for speed` : `${label} enabled`, 'success')
   }
 
   const handleQuickBootToggle = () => {
     const val = !quickBoot
     setQuickBoot(val)
     localStorage.setItem('emulator_quick_boot', String(val))
-    toast(val ? `${emoji('⚡')} Quick Boot (Snapshots) enabled` : `${emoji('❄️')} Cold Boot mode enabled (starts fresh)`, 'success')
+    toast(val ? 'Quick Boot (Snapshots) enabled' : 'Cold Boot mode enabled (starts fresh)', 'success')
   }
 
   const handleBootAnimToggle = () => {
     const val = !bootAnim
     setBootAnim(val)
     localStorage.setItem('emulator_boot_anim', String(val))
-    toast(val ? `${emoji('🎬')} Android Boot Animation enabled` : `${emoji('🚀')} Boot Animation disabled (faster startup)`, 'success')
+    toast(val ? 'Android Boot Animation enabled' : 'Boot Animation disabled (faster startup)', 'success')
   }
 
   useEffect(() => {
@@ -78,8 +95,8 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
     setApplying(false)
     const ok = result?.ok ?? false
     toast(ok
-      ? `${emoji('✅')} GPU preference applied! Emulator will use selected GPU on next launch.`
-      : `${emoji('⚠️')} ${result?.error || 'Some registry entries may need administrator rights.'}`,
+      ? 'GPU preference applied! Emulator will use selected GPU on next launch.'
+      : result?.error || 'Some registry entries may need administrator rights.',
       ok ? 'success' : 'warn')
   }
 
@@ -88,47 +105,47 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
     const result = await api.enableWhpx()
     setEnablingWhpx(false)
     toast(result.ok
-      ? `${emoji('✅')} WHPX enabled — please restart your PC.`
-      : `${emoji('❌')} Failed. Try running as administrator.`,
+      ? 'WHPX enabled — please restart your PC.'
+      : 'Failed. Try running as administrator.',
       result.ok ? 'success' : 'error')
   }
 
   const handleAccelChange = (val) => {
     setSelectedAccel(val)
     localStorage.setItem('emulator_accel', val)
-    toast(`${emoji('⚡')} Launch Accelerator set to "${val.toUpperCase()}"`, 'success')
+    toast(`Launch Accelerator set to "${val.toUpperCase()}"`, 'success')
   }
 
   const handleGpuModeChange = (val) => {
     setSelectedGpuMode(val)
     localStorage.setItem('emulator_gpu', val)
-    toast(`${emoji('🎮')} Default launch GPU set to "${val.toUpperCase()}"`, 'success')
+    toast(`Default launch GPU set to "${val.toUpperCase()}"`, 'success')
   }
 
   if (loading || !sysInfo) return (
-    <div className="flex items-center justify-center" style={{ padding: 60, gap: 14 }}>
+    <div className="loading-center-state">
       <Spinner size={24} />
       <span className="text-muted">Scanning hardware configurations...</span>
     </div>
   )
 
   const GPU_PREFS = [
-    { val: 1, label: `${emoji('🔋')} Power Saving (iGPU)`, desc: 'Use integrated graphics — saves battery' },
-    { val: 2, label: `${emoji('🔥')} High Performance (dGPU)`, desc: 'Use dedicated GPU — maximum gaming performance' },
-    { val: 0, label: `${emoji('⚙️')} System Default`, desc: 'Let Windows decide which GPU to use' },
+    { val: 1, label: 'Power Saving (iGPU)', desc: 'Use integrated graphics — saves battery' },
+    { val: 2, label: 'High Performance (dGPU)', desc: 'Use dedicated GPU — maximum gaming performance' },
+    { val: 0, label: 'System Default', desc: 'Let Windows decide which GPU to use' },
   ]
 
   const ACCEL_OPTIONS = [
-    { val: 'whpx', label: `${emoji('⚡')} WHPX (Windows Hypervisor Platform) - Recommended`, desc: 'Best performance. Fully compatible with WSL2, Hyper-V, Docker, and VirtualBox.' },
-    { val: 'aehd', label: `${emoji('🛡️')} AEHD (Android Emulator Hypervisor Driver)`, desc: "Google's lightweight standalone driver. Works on Intel/AMD. (Must disable Hyper-V to run AEHD)." },
-    { val: 'haxm', label: `${emoji('⚙️')} Intel HAXM (Legacy)`, desc: "Intel's hardware acceleration driver. Works on Intel CPUs only (Deprecated)." },
-    { val: 'off',  label: `${emoji('🖥️')} Off (No Virtualization)`, desc: 'Extremely slow! Emulates CPU in software. Use only for diagnostic troubleshooting.' },
+    { val: 'whpx', label: 'WHPX (Windows Hypervisor Platform) - Recommended', desc: 'Best performance. Fully compatible with WSL2, Hyper-V, Docker, and VirtualBox.' },
+    { val: 'aehd', label: 'AEHD (Android Emulator Hypervisor Driver)', desc: "Google's lightweight standalone driver. Works on Intel/AMD. (Must disable Hyper-V to run AEHD)." },
+    { val: 'haxm', label: 'Intel HAXM (Legacy)', desc: "Intel's hardware acceleration driver. Works on Intel CPUs only (Deprecated)." },
+    { val: 'off',  label: 'Off (No Virtualization)', desc: 'Extremely slow! Emulates CPU in software. Use only for diagnostic troubleshooting.' },
   ]
 
   const GPU_MODES = [
-    { val: 'host', label: `${emoji('🔥')} Host GPU (Zero overhead pass-through)`, desc: 'Direct access to your selected graphics card. Best for 3D gaming.' },
-    { val: 'angle_indirect', label: `${emoji('⚡')} ANGLE (DirectX translation)`, desc: 'Translates OpenGL calls into Windows DirectX. Highly stable.' },
-    { val: 'swiftshader_indirect', label: `${emoji('🖥️')} SwiftShader (Software)`, desc: 'CPU-rendered graphics. Slow, compatibility mode only.' },
+    { val: 'host', label: 'Host GPU (Zero overhead pass-through)', desc: 'Direct access to your selected graphics card. Best for 3D gaming.' },
+    { val: 'angle_indirect', label: 'ANGLE (DirectX translation)', desc: 'Translates OpenGL calls into Windows DirectX. Highly stable.' },
+    { val: 'swiftshader_indirect', label: 'SwiftShader (Software)', desc: 'CPU-rendered graphics. Slow, compatibility mode only.' },
   ]
 
   return (
@@ -138,7 +155,7 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
           Hardware configuration is cached. Use rescan if you made hardware changes.
         </div>
         <button className="btn btn-ghost btn-sm" onClick={onRescan} disabled={loading} style={{ border: '1px solid var(--border)' }}>
-          {emoji('🔄')} Rescan Hardware
+          <RefreshCw size={12} style={{ marginRight: 6 }} /> Rescan Hardware
         </button>
       </div>
 
@@ -146,9 +163,9 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
       {sysInfo && (
         <div className="grid-3">
           {[
-            { icon: emoji('💻') || '🖥', label: 'CPU', val: sysInfo.cpu_model?.split('@')[0]?.trim(), sub: `${sysInfo.cpu_count} threads` },
-            { icon: emoji('🧠') || '💾', label: 'Total RAM', val: `${Math.round(sysInfo.total_ram / 1024)} GB`, sub: `${Math.round(sysInfo.free_ram / 1024)} GB free` },
-            { icon: emoji('🖥️') || '📟', label: 'Architecture', val: sysInfo.arch, sub: sysInfo.platform },
+            { icon: <Cpu size={16} />, label: 'CPU', val: sysInfo.cpu_model?.split('@')[0]?.trim(), sub: `${sysInfo.cpu_count} threads` },
+            { icon: <HardDrive size={16} />, label: 'Total RAM', val: `${Math.round(sysInfo.total_ram / 1024)} GB`, sub: `${Math.round(sysInfo.free_ram / 1024)} GB free` },
+            { icon: <MonitorCog size={16} />, label: 'Architecture', val: sysInfo.arch, sub: sysInfo.platform },
           ].map(s => (
             <div key={s.label} className="stat-card">
               <div className="stat-icon" style={{ background: 'rgba(120,80,255,0.15)' }}>{s.icon}</div>
@@ -164,7 +181,7 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
 
       {/* ── Virtualization Accelerator ── */}
       <div className="card">
-        <div className="card-title">{emoji('⚡')} Virtualization Accelerator (accel)</div>
+        <div className="card-title"><Zap size={14} style={{ marginRight: 6 }} /> Virtualization Accelerator (accel)</div>
         <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
           Choose which CPU virtualization driver to use when launching emulators.
         </div>
@@ -182,7 +199,7 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
 
         {selectedAccel === 'whpx' && !hypervisor?.whpx_enabled && (
           <div className="alert alert-warn mt-3" style={{ display: 'flex', justifyContent: 'between', alignItems: 'center' }}>
-            <span>{emoji('⚠️')} WHPX is selected but not enabled in Windows.</span>
+            <span><AlertTriangle size={14} style={{ marginRight: 6 }} /> WHPX is selected but not enabled in Windows.</span>
             <button className="btn btn-primary btn-sm" onClick={enableWhpx} disabled={enablingWhpx}>
               {enablingWhpx ? 'Enabling...' : 'Enable WHPX Now'}
             </button>
@@ -192,7 +209,7 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
 
       {/* ── GPU Launch Rendering Mode ── */}
       <div className="card">
-        <div className="card-title">{emoji('🎮')} Launch GPU Rendering Mode (gpu)</div>
+        <div className="card-title"><Gamepad2 size={14} style={{ marginRight: 6 }} /> Launch GPU Rendering Mode (gpu)</div>
         <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
           Select the graphics acceleration mode passed to the emulator on startup.
         </div>
@@ -211,14 +228,14 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
 
       {/* ── Launch & Boot Options ── */}
       <div className="card">
-        <div className="card-title">{emoji('🚀')} Launch &amp; Boot Options</div>
+        <div className="card-title"><Rocket size={14} style={{ marginRight: 6 }} /> Launch &amp; Boot Options</div>
         <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
           Configure emulator startup and loading screen behaviors.
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div className="flex items-center justify-between" style={{ padding: '4px 0' }}>
             <div style={{ flex: 1, paddingRight: 16 }}>
-              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>{emoji('⚡')} Quick Boot (Snapshot Resume)</div>
+              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}><Zap size={13} style={{ marginRight: 6 }} /> Quick Boot (Snapshot Resume)</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Resume instantly from your last saved state (turn off for full cold boot every time).</div>
             </div>
             <div className={`toggle ${quickBoot ? 'on' : ''}`} onClick={handleQuickBootToggle} />
@@ -228,7 +245,7 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
 
           <div className="flex items-center justify-between" style={{ padding: '4px 0' }}>
             <div style={{ flex: 1, paddingRight: 16 }}>
-              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>{emoji('🎬')} Show Android Loading Logo</div>
+              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}><Rocket size={13} style={{ marginRight: 6 }} /> Show Android Loading Logo</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Display the native Android logo animation during startup.</div>
             </div>
             <div className={`toggle ${bootAnim ? 'on' : ''}`} onClick={handleBootAnimToggle} />
@@ -257,7 +274,7 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
             textAlign: 'left',
           }}
         >
-          <span>{emoji('🔧')} Advanced Options</span>
+          <span><Wrench size={14} style={{ marginRight: 6 }} /> Advanced Options</span>
           <span style={{
             fontSize: 11,
             color: 'var(--text-muted)',
@@ -268,7 +285,7 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
             alignItems: 'center',
             gap: 6,
           }}>
-            {advancedOpen ? `${emoji('▲')} Collapse` : `${emoji('▼')} Expand`}
+            {advancedOpen ? 'Collapse' : 'Expand'}
           </span>
         </button>
 
@@ -276,14 +293,14 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
           <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: 24 }}>
             {/* Speed & Performance Tweaks */}
             <div>
-              <div className="card-title" style={{ marginBottom: 8 }}>{emoji('⚡')} Speed &amp; Performance Tweaks</div>
+              <div className="card-title" style={{ marginBottom: 8 }}><Gauge size={14} style={{ marginRight: 6 }} /> Speed &amp; Performance Tweaks</div>
               <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
                 Disable unused emulator hardware modules to speed up launch times and reduce host CPU/RAM usage.
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div className="flex items-center justify-between" style={{ padding: '4px 0' }}>
                   <div style={{ flex: 1, paddingRight: 16 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>{emoji('📷')} Disable Webcam &amp; Camera Emulation</div>
+                    <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}><CameraOff size={13} style={{ marginRight: 6 }} /> Disable Webcam &amp; Camera Emulation</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Disables front/back virtual cameras. Bypasses 3D scene rendering for faster startup.</div>
                   </div>
                   <div className={`toggle ${noCamera ? 'on' : ''}`} onClick={() => handlePerfToggle('emulator_perf_no_camera', noCamera, setNoCamera, 'Camera Emulation')} />
@@ -293,7 +310,7 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
 
                 <div className="flex items-center justify-between" style={{ padding: '4px 0' }}>
                   <div style={{ flex: 1, paddingRight: 16 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>{emoji('📍')} Disable Location / GPS Polling</div>
+                    <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}><MapPinOff size={13} style={{ marginRight: 6 }} /> Disable Location / GPS Polling</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Stops the emulator from continuously tracking your computer's location.</div>
                   </div>
                   <div className={`toggle ${noGps ? 'on' : ''}`} onClick={() => handlePerfToggle('emulator_perf_no_gps', noGps, setNoGps, 'GPS Tracking')} />
@@ -303,7 +320,7 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
 
                 <div className="flex items-center justify-between" style={{ padding: '4px 0' }}>
                   <div style={{ flex: 1, paddingRight: 16 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>{emoji('📡')} Disable Bluetooth Simulation</div>
+                    <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}><BluetoothOff size={13} style={{ marginRight: 6 }} /> Disable Bluetooth Simulation</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Disables the background Bluetooth network daemon (netsimd), saving ~100MB of RAM.</div>
                   </div>
                   <div className={`toggle ${noBluetooth ? 'on' : ''}`} onClick={() => handlePerfToggle('emulator_perf_no_bluetooth', noBluetooth, setNoBluetooth, 'Bluetooth Simulation')} />
@@ -315,7 +332,7 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
 
             {/* Windows GPU Preference (Registry) */}
             <div>
-              <div className="card-title" style={{ marginBottom: 8 }}>{emoji('🔌')} Windows GPU Preference (Registry Override)</div>
+              <div className="card-title" style={{ marginBottom: 8 }}><ShieldCheck size={14} style={{ marginRight: 6 }} /> Windows GPU Preference (Registry Override)</div>
               <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
                 Force Windows Graphics settings to bind the emulator executables directly to your dedicated or integrated GPU.
               </div>
@@ -325,7 +342,7 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
                   <div key={gpu.index} className={`gpu-card ${selectedGpu === gpu.index ? 'selected' : ''}`}
                     onClick={() => setSelectedGpu(gpu.index)}>
                     <div className={`gpu-icon ${gpu.is_dedicated ? 'dedicated' : 'integrated'}`}>
-                      {gpu.is_dedicated ? emoji('🔥') || '★' : emoji('💡') || '○'}
+                      {gpu.is_dedicated ? <Zap size={14} /> : <Sparkles size={14} />}
                     </div>
                     <div style={{ flex: 1 }}>
                       <div className="gpu-name">{gpu.name}</div>
@@ -353,11 +370,11 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
               </div>
 
               <div className="alert alert-info" style={{ marginBottom: 16 }}>
-                {emoji('💡')} Written to <span className="font-mono" style={{ fontSize: 11 }}>HKCU\Software\Microsoft\DirectX\UserGpuPreferences</span> — same as Windows <strong>Settings → Display → Graphics Settings</strong>.
+                <Sparkles size={14} style={{ marginRight: 6 }} /> Written to <span className="font-mono" style={{ fontSize: 11 }}>HKCU\Software\Microsoft\DirectX\UserGpuPreferences</span> — same as Windows <strong>Settings → Display → Graphics Settings</strong>.
               </div>
 
               <button className="btn btn-primary" onClick={applyGpuPreference} disabled={applying || selectedGpu === null}>
-                {applying ? <><Spinner size={15} />Applying…</> : `${emoji('🎮')} Apply Windows GPU Registry`}
+                {applying ? <><Spinner size={15} />Applying…</> : <><ShieldCheck size={14} style={{ marginRight: 6 }} /> Apply Windows GPU Registry</>}
               </button>
             </div>
 
@@ -365,18 +382,18 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
 
             {/* Performance Tips */}
             <div>
-              <div className="card-title" style={{ marginBottom: 12 }}>{emoji('🚀')} Performance Tips</div>
+              <div className="card-title" style={{ marginBottom: 12 }}><Rocket size={14} style={{ marginRight: 6 }} /> Performance Tips</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
-                  { icon: emoji('🎮') || '★', tip: 'Use GPU mode "Host" when creating a device — passes graphics directly to your GPU with zero translation overhead.' },
-                  { icon: emoji('📦') || '□', tip: 'Always use x86_64 system images — no ARM emulation overhead, runs at native CPU speed.' },
-                  { icon: emoji('🧠') || '○', tip: 'Allocate at least 4 CPU cores and 4 GB RAM for gaming apps.' },
-                  { icon: emoji('⚡') || '!', tip: 'Enable WHPX (Windows Hypervisor Platform) for CPU virtualization — massive speed improvement.' },
-                  { icon: emoji('💾') || '◈', tip: 'Use fast boot (snapshot) to avoid waiting for Android to cold boot each time.' },
-                  { icon: emoji('🔋') || '▷', tip: 'Close other GPU-heavy apps while gaming in the emulator for best frame rates.' },
+                  { icon: <Gamepad2 size={16} />, tip: 'Use GPU mode "Host" when creating a device — passes graphics directly to your GPU with zero translation overhead.' },
+                  { icon: <MonitorCog size={16} />, tip: 'Always use x86_64 system images — no ARM emulation overhead, runs at native CPU speed.' },
+                  { icon: <Cpu size={16} />, tip: 'Allocate at least 4 CPU cores and 4 GB RAM for gaming apps.' },
+                  { icon: <Zap size={16} />, tip: 'Enable WHPX (Windows Hypervisor Platform) for CPU virtualization — massive speed improvement.' },
+                  { icon: <Rocket size={16} />, tip: 'Use fast boot (snapshot) to avoid waiting for Android to cold boot each time.' },
+                  { icon: <BatteryMedium size={16} />, tip: 'Close other GPU-heavy apps while gaming in the emulator for best frame rates.' },
                 ].map((t, i) => (
                   <div key={i} className="flex gap-2 items-center" style={{ padding: '10px 0', borderBottom: i < 5 ? '1px solid var(--border)' : 'none' }}>
-                    <span style={{ fontSize: 18, width: 28 }}>{t.icon}</span>
+                    <span style={{ width: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{t.icon}</span>
                     <span style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{t.tip}</span>
                   </div>
                 ))}
