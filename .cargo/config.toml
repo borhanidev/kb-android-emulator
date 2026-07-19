@@ -1,7 +1,0 @@
-[build]
-# LOCAL WINDOWS ONLY — this file is gitignored and never committed to the repo.
-# windres (GNU toolchain) crashes on paths with spaces, so we redirect the
-# Cargo target dir to a space-free location. Mac/Linux users don't need this.
-# If you clone this project on Windows into a path with spaces, create this
-# file yourself with any absolute path that has no spaces.
-target-dir = "C:/cargo-targets/kb-android-emulator"

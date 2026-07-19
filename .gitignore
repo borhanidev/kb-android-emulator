@@ -35,4 +35,7 @@ src-tauri/target/
 .agents/
 
 .vscode
-.cargo
+
+# Windows-only Cargo target-dir override (space-free path workaround)
+# See .cargo/config.toml.example for setup instructions
+.cargo/config.toml
