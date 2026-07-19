@@ -139,7 +139,7 @@ export function GpuSettings({ toast, gpus, hypervisor, sysInfo, loading, onResca
     { val: 'whpx', label: 'WHPX (Windows Hypervisor Platform) - Recommended', desc: 'Best performance. Fully compatible with WSL2, Hyper-V, Docker, and VirtualBox.' },
     { val: 'aehd', label: 'AEHD (Android Emulator Hypervisor Driver)', desc: "Google's lightweight standalone driver. Works on Intel/AMD. (Must disable Hyper-V to run AEHD)." },
     { val: 'haxm', label: 'Intel HAXM (Legacy)', desc: "Intel's hardware acceleration driver. Works on Intel CPUs only (Deprecated)." },
-    { val: 'off',  label: 'Off (No Virtualization)', desc: 'Extremely slow! Emulates CPU in software. Use only for diagnostic troubleshooting.' },
+    { val: 'off', label: 'Off (No Virtualization)', desc: 'Extremely slow! Emulates CPU in software. Use only for diagnostic troubleshooting.' },
   ]
 
   const GPU_MODES = [

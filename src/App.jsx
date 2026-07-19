@@ -7,19 +7,19 @@ import { GpuSettings } from './components/GpuSettings.jsx'
 import { Settings } from './components/Settings.jsx'
 import * as api from './api.js'
 import { useTranslation } from 'react-i18next'
-import { 
-  Sliders, 
-  Package, 
-  Smartphone, 
-  Cpu, 
-  Terminal, 
+import {
+  Sliders,
+  Package,
+  Smartphone,
+  Cpu,
+  Terminal,
   Settings as SettingsIcon,
-  RefreshCw, 
-  Zap, 
-  Plus, 
-  AlertTriangle, 
-  Coffee, 
-  Wrench, 
+  RefreshCw,
+  Zap,
+  Plus,
+  AlertTriangle,
+  Coffee,
+  Wrench,
   Bot,
   Play,
   Pause,
@@ -48,19 +48,19 @@ export default function App() {
   }
 
   const NAV = [
-    { id: 'setup',   icon: <Sliders size={14} />,  label: t('nav_setup') },
-    { id: 'sdk',     icon: <Package size={14} />, label: t('nav_sdk') },
+    { id: 'setup', icon: <Sliders size={14} />, label: t('nav_setup') },
+    { id: 'sdk', icon: <Package size={14} />, label: t('nav_sdk') },
     { id: 'devices', icon: <Smartphone size={14} />, label: t('nav_devices') },
-    { id: 'gpu',     icon: <Cpu size={14} />, label: t('nav_gpu') },
-    { id: 'logs',    icon: <Terminal size={14} />, label: t('nav_logs') },
-    { id: 'settings',icon: <SettingsIcon size={14} />,  label: t('nav_settings') },
+    { id: 'gpu', icon: <Cpu size={14} />, label: t('nav_gpu') },
+    { id: 'logs', icon: <Terminal size={14} />, label: t('nav_logs') },
+    { id: 'settings', icon: <SettingsIcon size={14} />, label: t('nav_settings') },
   ]
   const [logCapture, setLogCapture] = useState(
     localStorage.getItem('emulator_log_capture') !== 'false'
   )
   const [avds, setAvds] = useState([])
   const [appVersion, setAppVersion] = useState('0.1.0-beta')
-  
+
   useEffect(() => {
     api.getAppVersion().then(setAppVersion).catch(e => console.error(e))
   }, [])
@@ -180,7 +180,7 @@ export default function App() {
     const noBluetooth = localStorage.getItem('emulator_perf_no_bluetooth') === 'true'
 
     const readOnly = localStorage.getItem(`emulator_ultra_gaming_${name}`) === 'true'
-    
+
     let speedModeVal = localStorage.getItem(`emulator_speed_mode_${name}`)
     if (speedModeVal === null) {
       speedModeVal = localStorage.getItem('emulator_speed_mode')
@@ -189,11 +189,11 @@ export default function App() {
 
     const rawLaunch = localStorage.getItem(`emulator_raw_launch_${name}`) === 'true'
 
-    const result = await api.launchAvd({ 
-      name, 
-      gpuMode, 
-      accel, 
-      quickBoot, 
+    const result = await api.launchAvd({
+      name,
+      gpuMode,
+      accel,
+      quickBoot,
       bootAnim,
       noCamera,
       noGps,
@@ -456,8 +456,8 @@ export default function App() {
                     <RefreshCw size={12} />
                     {t('devices_refresh')}
                   </button>
-                  <button 
-                    className="btn btn-ghost btn-sm flex items-center gap-1" 
+                  <button
+                    className="btn btn-ghost btn-sm flex items-center gap-1"
                     onClick={handleOptimizeApps}
                     disabled={optimizing || avds.filter(a => a.running).length === 0}
                     title="Pre-compiles installed games/apps to native machine code to eliminate JIT stuttering. Requires a running emulator."
@@ -519,21 +519,21 @@ export default function App() {
                 <p className="page-subtitle">{t('sdk_subtitle')}</p>
               </div>
               {status?.cmdline_installed
-                ? <SdkManager 
-                    logs={logs} 
-                    status={status} 
-                    refreshStatus={refreshStatus}
-                    progress={sdkProgress}
-                    setProgress={setSdkProgress}
-                    installing={sdkInstalling}
-                    setInstalling={setSdkInstalling}
-                    errors={sdkErrors}
-                    setErrors={setSdkErrors}
-                  />
+                ? <SdkManager
+                  logs={logs}
+                  status={status}
+                  refreshStatus={refreshStatus}
+                  progress={sdkProgress}
+                  setProgress={setSdkProgress}
+                  installing={sdkInstalling}
+                  setInstalling={setSdkInstalling}
+                  errors={sdkErrors}
+                  setErrors={setSdkErrors}
+                />
                 : <div className="alert alert-warn flex items-center gap-2">
-                    <AlertTriangle size={14} style={{ flexShrink: 0 }} />
-                    <span>Please install cmdline-tools first from the <strong>Setup</strong> page.</span>
-                  </div>
+                  <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+                  <span>Please install cmdline-tools first from the <strong>Setup</strong> page.</span>
+                </div>
               }
             </div>
           )}
@@ -548,12 +548,12 @@ export default function App() {
                 </h1>
                 <p className="page-subtitle">{t('gpu_subtitle')}</p>
               </div>
-              <GpuSettings 
-                toast={toast} 
-                gpus={gpus} 
-                hypervisor={hypervisor} 
-                sysInfo={sysInfo} 
-                loading={loadingHardware} 
+              <GpuSettings
+                toast={toast}
+                gpus={gpus}
+                hypervisor={hypervisor}
+                sysInfo={sysInfo}
+                loading={loadingHardware}
                 onRescan={refreshHardware}
               />
             </div>
@@ -622,7 +622,7 @@ export default function App() {
                         </div>
                         <div className="setup-card-badge">STEP 0{item.step}</div>
                       </div>
-                      
+
                       <div className="setup-card-content">
                         <div className="setup-card-header">
                           <h3 className="setup-card-title">{item.title}</h3>
@@ -653,8 +653,8 @@ export default function App() {
                               disabled
                               style={{ opacity: 0.75, cursor: 'not-allowed' }}
                             >
-                               <Spinner size={12} />Uninstalling…
-                             </button>
+                              <Spinner size={12} />Uninstalling…
+                            </button>
                           ) : item.installed ? (
                             item.onUninstall && (
                               <button
@@ -715,7 +715,7 @@ export default function App() {
 
           {/* ─── Settings Page ─── */}
           {page === 'settings' && (
-            <Settings 
+            <Settings
               toast={toast}
             />
           )}
